@@ -1,0 +1,37 @@
+# sim/make_main.am
+# Rules to automatically generate the main function from the .hh files of a
+# given object.
+
+# for 'Excutable'
+# find the last object defined in the header file and use it as an Excutable
+SUFFIXES = -main.cc -runner.cc
+.hh-main.cc:
+	obj=`egrep ^class $<|tail -1|awk '{print $$2;}'`;(\
+	printf "#include <$<>\n";\
+	printf "int main(int argc, char * argv[], char * envp[])\n";\
+	printf "{\n";\
+	printf "	$$obj obj(argc, argv, envp);\n";\
+	printf "	return obj.execute();\n";\
+	printf "}\n") > $@
+CLEANFILES += *-main.cc
+
+# for 'Runnable' imbued with 'Runner'
+# find the last object defined in the header file and use it as a Runnable
+.hh-runner.cc:
+	obj=`egrep ^class $<|tail -1|awk '{print $$2;}'`;(\
+	printf "#include <$<>\n";\
+	printf "#include <sim/runner.hh>\n";\
+	printf "class Runner$$obj :\n";\
+	printf "	private $$obj,\n";\
+	printf "	virtual public Runner\n";\
+	printf "{\n";\
+	printf "public:\n";\
+	printf "	Runner$$obj(int argc, char ** argv, char ** envp) :\n";\
+	printf "		Runner(argc, argv, envp)\n";\
+	printf "	{}\n";\
+	printf "};\n";\
+	printf "int main(int argc, char * argv[], char * envp[]) {\n";\
+	printf "	Runner$$obj obj(argc, argv, envp);\n";\
+	printf "	return obj.execute();\n";\
+	printf "}\n" ) > $@
+CLEANFILES += *-runner.cc
