@@ -2,11 +2,12 @@
 Common Simulation Tools
 
 * arg.cc arg.hh val.cc val.hh  
-from arg package
+from arg package http://ccdw.org/~cjj/prog/arg/
 * gltk.cc gltk.hh sigc.hh  
-are generated files from gltk package
+are generated files from gltk package http://gltk.ccdw.org/
 * prm/  
 parameter manager
 * sim/  
 simulation framework
-* mk_copy: script for copying arg and gltk files
+
+cst is a set of tools to take care of common tasks that are usually encountered in simulations or numerical calculations of computational models.
