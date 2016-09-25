@@ -1,0 +1,4 @@
+#!/bin/bash
+RECONF_OPT="--symlink --install --force"
+
+autoreconf ${RECONF_OPT} $*
