@@ -61,6 +61,7 @@ namespace prm {
 		template <typename Type> std::string type_word() {return "VALUE";}
 		template <> std::string type_word<bool>();
 		template <> std::string type_word<int>();
+		template <> std::string type_word<unsigned>();
 		template <> std::string type_word<size_t>();
 		template <> std::string type_word<double>();
 
