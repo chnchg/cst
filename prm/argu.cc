@@ -69,6 +69,7 @@ bool argu::Base::alter()
 
 template <> std::string argu::type_word<bool>() {return "BOOL";}
 template <> std::string argu::type_word<int>() {return "INT";}
+template <> std::string argu::type_word<unsigned>() {return "UINT";}
 template <> std::string argu::type_word<size_t>() {return "SIZE";}
 template <> std::string argu::type_word<double>() {return "DOUBLE";}
 
@@ -86,6 +87,7 @@ void Argu::add(Param & p)
 		// So, we are making tabulated translations:
 		if (Var<bool> * v = dynamic_cast<Var<bool> *>(i->var)) c = new argu::Arg<bool>(i->name, * v);
 		else if (Var<int> * v = dynamic_cast<Var<int> *>(i->var)) c = new argu::Arg<int>(i->name, * v);
+		else if (Var<unsigned> * v = dynamic_cast<Var<unsigned> *>(i->var)) c = new argu::Arg<unsigned>(i->name, * v);
 		else if (Var<size_t> * v = dynamic_cast<Var<size_t> *>(i->var)) c = new argu::Arg<size_t>(i->name, * v);
 		else if (Var<double> * v = dynamic_cast<Var<double> *>(i->var)) c = new argu::Arg<double>(i->name, * v);
 		else if (Var<std::string> * v = dynamic_cast<Var<std::string> *>(i->var)) c = new argu::Arg<std::string>(i->name, * v);
