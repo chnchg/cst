@@ -156,7 +156,7 @@ namespace prm {
 		sigc::signal<void> & signal_changed();
 		sigc::signal<void> & signal_changed(std::string const & var_name); // changed signal for certain item
 
-		static gui::Base * make_ctrl(Taggable * var);
+		static gui::Base * make_ctrl(std::shared_ptr<Taggable> var);
 	};
 }
 #endif
