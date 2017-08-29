@@ -142,6 +142,11 @@ void Param::copy(Param const & p)
 	if (i->name == j->name) i->var->copy_value(* j->var);
 }
 
+void Param::append(Param const & p)
+{
+	for (auto v: p.vars) vars.push_back(v);
+}
+
 Struct::Struct() :
 	res(0)
 {}
