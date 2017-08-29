@@ -43,15 +43,9 @@ Taggable::~Taggable()
 }
 
 // Param
-Param::~Param()
-{
-	while (vars.size()) {
-		delete vars.back().var;
-		vars.pop_back();
-	}
-}
+Param::~Param() {}
 
-TagSable & Param::add_var(const std::string & name, TagSable * v)
+TagSable & Param::add_var(const std::string & name, std::shared_ptr<TagSable> v)
 {
 	for (std::vector<VarEntry>::iterator i = vars.begin(); i != vars.end(); i ++) if (i->name == name) {
 		std::cerr << "Duplicate var!\n";
@@ -99,7 +93,6 @@ TagSable & Param::get_var(const std::string & name)
 void Param::delete_var(const std::string & name)
 {
 	for (std::vector<VarEntry>::iterator i = vars.begin(); i != vars.end(); i ++) if (i->name == name) {
-		delete i->var;
 		vars.erase(i);
 		return;
 	}
@@ -120,7 +113,7 @@ void Param::read(std::istream & input)
 		std::string name = s.substr(0, ep);
 		std::string val = s.substr(ep + 1);
 		for (std::vector<VarEntry>::iterator i = vars.begin(); i != vars.end(); i ++) if (i->name == name) {
-			if (TagSable * ts = dynamic_cast<TagSable *>(i->var)) ts->read_str(val);
+			if (auto ts = std::static_pointer_cast<TagSable>(i->var)) ts->read_str(val);
 			break;
 		}
 	}
@@ -130,7 +123,7 @@ void Param::write(std::ostream & output) const
 {
 	for (std::vector<VarEntry>::const_iterator i = vars.begin(); i != vars.end(); i ++) {
 		output << i->name << '=';
-		if (TagSable * ts = dynamic_cast<TagSable *>(i->var)) output << ts->to_str();
+		if (auto ts = std::static_pointer_cast<TagSable>(i->var)) output << ts->to_str();
 		output << '\n';
 	}
 }

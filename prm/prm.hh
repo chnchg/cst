@@ -591,20 +591,20 @@ namespace prm {
 		struct VarEntry
 		{
 			std::string name;
-			TagSable * var;
-			VarEntry(const std::string & n, TagSable * v) :
+			std::shared_ptr<TagSable> var;
+			VarEntry(const std::string & n, std::shared_ptr<TagSable> v) :
 				name(n),
 				var(v)
 			{}
 		};
 		std::vector<VarEntry> vars;
 		~Param();
-		TagSable & add_var(const std::string & name, TagSable * v); // * v is taken over
+		TagSable & add_var(const std::string & name, std::shared_ptr<TagSable> v);
 		// overloaded add_var
 		template <typename Type>
 		TagSable & add_var(const std::string & name, Type & v)
 		{
-			return add_var(name, new Adr<Type>(v));
+			return add_var(name, std::make_shared<Adr<Type>>(v));
 		}
 		// access
 		std::vector<const std::string *> get_names() const;

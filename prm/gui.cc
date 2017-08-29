@@ -474,28 +474,26 @@ sigc::signal<void> & Gltk::signal_changed(std::string const & name)
 	throw;
 }
 
-gui::Base * Gltk::make_ctrl(Taggable * var) // The Magic happens here!
+gui::Base * Gltk::make_ctrl(std::shared_ptr<Taggable> var) // The Magic happens here!
 {
 	gui::Base * c = 0;
-	if (Var<bool> * v = dynamic_cast<Var<bool> *>(var)) {
+	if (auto v = std::dynamic_pointer_cast<Var<bool>>(var)) {
 		c = new gui::Bool(* v);
 	}
-	else if (Var<int> * v = dynamic_cast<Var<int> *>(var)) {
+	else if (auto v = std::dynamic_pointer_cast<Var<int>>(var)) {
 		if (var->find<tag::Select>()) {
 			c = new gui::Select(* v);
 		}
 		else c = new gui::Int(* v);
 	}
-	else if (Var<size_t> * v = dynamic_cast<Var<size_t> *>(var)) {
+	else if (auto v = std::dynamic_pointer_cast<Var<size_t>>(var)) {
 		c = new gui::Size(* v);
 	}
-	else if (dynamic_cast<Var<double> *>(var) && var->find<tag::Step>()) {
-		Var<double> * v = dynamic_cast<Var<double> *>(var);
-		c = new gui::Double(* v);
+	else if (auto v = std::dynamic_pointer_cast<Var<double>>(var)) {
+		if (var->find<tag::Step>()) c = new gui::Double(* v);
 	}
-	else if (dynamic_cast<Var<std::string> *>(var) && var->find<tag::File>()) {
-		Var<std::string> * v = dynamic_cast<Var<std::string> *>(var);
-		c = new gui::File(* v);
+	else if (auto v = std::dynamic_pointer_cast<Var<std::string>>(var)) {
+		if (var->find<tag::File>()) c = new gui::File(* v);
 	}
 	/*
 	else if (TagSable * v = dynamic_cast<TagSable *>(var)) {
