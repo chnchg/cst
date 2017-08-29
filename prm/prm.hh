@@ -616,6 +616,8 @@ namespace prm {
 		void write(std::ostream & output) const;
 		// copy values from another Param
 		void copy(Param const & p);
+		// merge in another Param
+		void append(Param const & p);
 	};
 	struct Struct :
 		virtual public Array
