@@ -65,6 +65,32 @@ namespace arg {
 		std::string get_help() const;
 	};
 
+	// Set of terms in strings
+	class TermValue :
+		public Value
+	{
+		std::string & var;
+		std::string help_title;
+		bool help_default;
+		struct Element {
+			std::string name;
+			std::string help;
+		};
+		std::vector<Element> term_list;
+	public:
+		TermValue(std::string & var);
+		void add_help(const std::string & title = "Available values:");
+		void add(const std::string & name, const std::string & help = "");
+
+		void set(const std::string & str) override;
+		std::string to_str() const override;
+		std::string get_type() const override;
+
+		// additional access to set
+		const std::string & get_help(const std::string & name) const;
+		std::string get_help() const;
+	};
+
 	// List of values seperated by comma
 	template <typename T>
 	class ListValue :

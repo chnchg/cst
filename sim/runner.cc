@@ -75,12 +75,12 @@ namespace {
 
 void Runner::set_parser()
 {
-	dump_set.add("help", dump_set.new_key(), "Available data for --dump:");
-	dump_set.add("info", dump_set.new_key(), "display information of the data file");
-	dump_set.add("param", dump_set.new_key(), "display parameter values of the data file");
-	dump_set.add("count", dump_set.new_key(), "integer representation of the amount of running");
+	dump_set["help"] = "Available data for --dump:";
+	dump_set["info"] = "display information of the data file";
+	dump_set["param"] = "display parameter values of the data file";
+	dump_set["count"] = "integer representation of the amount of running";
 
-	dump_type = dump_set.get_key("help");
+	dump_type = "help";
 
 	std::string header = "Usage: " + exec_name + " <Command> [Options] <File>\n";
 	if (description.size()) header += description + '\n';
@@ -97,8 +97,13 @@ void Runner::set_parser()
 		.once(RT_NONE)
 		.help("run until count=VALUE or count+VALUE", "[+]VALUE")
 		.show_default();
+	arg::TermValue * tv = new arg::TermValue(dump_type);
+	for (auto const & e: dump_set) {
+		if (e.first == "help") tv->add_help(e.second);
+		else tv->add(e.first, e.second);
+	}
 	parser.add_opt('D', "dump")
-		.store(dump_set.make_set_value(dump_type))
+		.store(tv)
 		.set(& run_type, RT_DUMP)
 		.once(RT_NONE)
 		.help("dump DATA in the data file, use 'help' for a list of available data", "DATA");
@@ -212,14 +217,14 @@ int Runner::on_execute()
 		std::streamsize sp = std::cout.precision();
 		std::cout.precision(0);
 		std::cout.setf(std::ios::fixed, std::ios::floatfield);
-		if (dump_set.check(dump_type, "info")) {
+		if (dump_type == "info") {
 			std::cout << "data_file=" << data_file << '\n';
 			std::cout << "count=" << count() << '\n';
 		}
-		else if (dump_set.check(dump_type, "param")) {
+		else if (dump_type == "param") {
 			param.write(std::cout);
 		}
-		else if (dump_set.check(dump_type, "count")) {
+		else if (dump_type == "count") {
 			std::cout << count() << '\n';
 		}
 		// restore default formating

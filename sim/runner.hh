@@ -48,7 +48,7 @@ class Runner :
 		RT_DUMP  // exporting data
 	};
 	int run_type;
-	int dump_type;
+	std::string dump_type;
 	std::string data_file;
 	int overwrite;
 	int use_lock;

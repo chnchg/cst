@@ -24,6 +24,7 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
 #include "with_param.hh"
 #include <prm/name_set.hh>
 #include <hdf5.h>
+#include <map>
 class Runnable :
 	virtual public WithParam // running parameter manager
 {
@@ -38,8 +39,8 @@ public:
 	// run meter
 	virtual double count() const = 0;
 	// optional abilities
-	NameSet dump_set;
-	virtual void dump(int /*what*/, std::ostream & /*output*/) const {} // dump states to a stream
+	std::map<std::string, std::string> dump_set;
+	virtual void dump(std::string const & /*what*/, std::ostream & /*output*/) const {}
 	std::string description;
 };
 #endif // RUNNABLE_HH
