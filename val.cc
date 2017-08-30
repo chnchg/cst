@@ -156,6 +156,77 @@ string SetValue::get_help() const
 	return help;
 }
 
+TermValue::TermValue(std::string & v) :
+	var(v),
+	help_default(false)
+{
+}
+
+void TermValue::add_help(const string & title)
+{
+	help_title = title;
+	help_default = true;
+	add("help", "show this list");
+}
+
+void TermValue::add(const string & name, const string & help)
+{
+	for (auto e: term_list) if (name == e.name) throw Error("duplicated element in SetValue");
+	Element e;
+	e.name = name;
+	e.help = help;
+	term_list.push_back(e);
+}
+
+void TermValue::set(const string & str)
+{
+	if (help_default && str == "help") { // print help and quit
+		cout << '\n';
+		cout << help_title << '\n';
+		cout << '\n';
+		cout << get_help();
+		cout << '\n';
+		exit(0);
+	}
+	for (auto e: term_list) if (str == e.name) {
+		var = str;
+		return;
+	}
+	throw ConvError(str, "an element in SetValue");
+}
+
+string TermValue::to_str() const
+{
+	for (auto e: term_list) if (var == e.name) return var;
+	throw Error("no such value in Set");
+}
+
+string TermValue::get_type() const
+{
+	return "term()";
+}
+
+const string & TermValue::get_help(const string & name) const
+{
+	for (auto & e: term_list) if (name == e.name) return e.help;
+	throw Error("element '" + name + "' not found in SetValue");
+}
+
+string TermValue::get_help() const
+{
+	string help;
+	for (auto e: term_list) {
+		string s = "    ";
+		s += e.name;
+		s += ": ";
+		if (s.size() < 16) s.resize(16, ' ');
+		s += e.help;
+		s += '\n';
+		help += s;
+	}
+	return help;
+}
+
 RelValue::RelValue(double & var, bool & is_relative) :
 	v(var),
 	rel(is_relative)
