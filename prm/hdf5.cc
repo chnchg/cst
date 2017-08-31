@@ -49,9 +49,9 @@ namespace { // no need to export all these implementation
 
 	// saving with native types
 	template <typename T>
-	bool h5_save_nat(hid_t group, const TagSable * ts, const std::string & name)
+	bool h5_save_nat(hid_t group, std::shared_ptr<Sable const> s, std::string const & name)
 	{
-		if (const Var<T> * v = dynamic_cast<const Var<T> *>(ts)) {
+		if (auto v = std::dynamic_pointer_cast<Var<T> const>(s)) {
 			typename h5t<T>::Type b;
 			b = v->get();
 			hid_t space = H5Screate(H5S_SCALAR);
@@ -65,9 +65,9 @@ namespace { // no need to export all these implementation
 	}
 
 	template <typename T>
-	bool h5_load_nat(hid_t group, TagSable * ts, const std::string & name, size_t * cnt = 0)
+	bool h5_load_nat(hid_t group, std::shared_ptr<Sable> s, const std::string & name, size_t * cnt = 0)
 	{
-		if (Var<T> * v = dynamic_cast<Var<T> *>(ts)) {
+		if (auto v = std::dynamic_pointer_cast<Var<T>>(s)) {
 			if (! H5Lexists(group, name.c_str(), H5P_DEFAULT)) return true;
 			hid_t data = H5Dopen(group, name.c_str(), H5P_DEFAULT);
 			hid_t space = H5Dget_space(data);
@@ -89,15 +89,15 @@ namespace { // no need to export all these implementation
 
 	// specialize for std::string
 	template <>
-	bool h5_save_nat<std::string>(hid_t group, const TagSable * ts, const std::string & name)
+	bool h5_save_nat<std::string>(hid_t group, std::shared_ptr<Sable const> s, const std::string & name)
 	{
-		if (const Var<std::string> * v = dynamic_cast<const Var<std::string> *>(ts)) {
+		if (auto v = std::dynamic_pointer_cast<Var<std::string> const>(s)) {
 			std::string b;
 			b = v->get();
 			hid_t space = H5Screate(H5S_SCALAR);
 			hid_t data = H5Dcreate(group, name.c_str(), h5_nat<std::string>(), space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-			char const * s = b.c_str();
-			H5Dwrite(data, h5_nat<std::string>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, & s);
+			char const * t = b.c_str();
+			H5Dwrite(data, h5_nat<std::string>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, & t);
 			H5Dclose(data);
 			H5Sclose(space);
 			return true;
@@ -106,9 +106,9 @@ namespace { // no need to export all these implementation
 	}
 
 	template <>
-	bool h5_load_nat<std::string>(hid_t group, TagSable * ts, const std::string & name, size_t * cnt)
+	bool h5_load_nat<std::string>(hid_t group, std::shared_ptr<Sable> s, const std::string & name, size_t * cnt)
 	{
-		if (Var<std::string> * v = dynamic_cast<Var<std::string> *>(ts)) {
+		if (auto v = std::dynamic_pointer_cast<Var<std::string>>(s)) {
 			if (! H5Lexists(group, name.c_str(), H5P_DEFAULT)) return true;
 			hid_t data = H5Dopen(group, name.c_str(), H5P_DEFAULT);
 			hid_t space = H5Dget_space(data);
@@ -117,10 +117,10 @@ namespace { // no need to export all these implementation
 				H5Dclose(data);
 				return true;
 			}
-			char * s;
-			H5Dread(data, h5_nat<std::string>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, & s);
-			v->set(s);
-			H5Dvlen_reclaim(h5_nat<std::string>(), space, H5P_DEFAULT, & s);
+			char * t;
+			H5Dread(data, h5_nat<std::string>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, & t);
+			v->set(t);
+			H5Dvlen_reclaim(h5_nat<std::string>(), space, H5P_DEFAULT, & t);
 			if (cnt) (* cnt) ++;
 			H5Sclose(space);
 			H5Dclose(data);
@@ -131,20 +131,20 @@ namespace { // no need to export all these implementation
 
 	// specialize for Sable
 	template <>
-	bool h5_save_nat<Sable>(hid_t group, const TagSable * ts, const std::string & name)
+	bool h5_save_nat<Sable>(hid_t group, std::shared_ptr<Sable const> s, std::string const & name)
 	{
-		std::string b = ts->to_str();
+		std::string b = s->to_str();
 		hid_t space = H5Screate(H5S_SCALAR);
 		hid_t data = H5Dcreate(group, name.c_str(), h5_nat<std::string>(), space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		char const * s = b.c_str();
-		H5Dwrite(data, h5_nat<std::string>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, & s);
+		char const * t = b.c_str();
+		H5Dwrite(data, h5_nat<std::string>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, & t);
 		H5Dclose(data);
 		H5Sclose(space);
 		return true;
 	}
 
 	template <>
-	bool h5_load_nat<Sable>(hid_t group, TagSable * ts, const std::string & name, size_t * cnt)
+	bool h5_load_nat<Sable>(hid_t group, std::shared_ptr<Sable> s, const std::string & name, size_t * cnt)
 	{
 		if (! H5Lexists(group, name.c_str(), H5P_DEFAULT)) return true;
 		hid_t data = H5Dopen(group, name.c_str(), H5P_DEFAULT);
@@ -154,11 +154,11 @@ namespace { // no need to export all these implementation
 			H5Dclose(data);
 			return true;
 		}
-		char * s;
-		H5Dread(data, h5_nat<std::string>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, & s);
-		if (! ts->test_str(s)) return true;
-		ts->read_str(s);
-		H5Dvlen_reclaim(h5_nat<std::string>(), space, H5P_DEFAULT, & s);
+		char * t;
+		H5Dread(data, h5_nat<std::string>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, & t);
+		if (! s->test_str(t)) return true;
+		s->read_str(t);
+		H5Dvlen_reclaim(h5_nat<std::string>(), space, H5P_DEFAULT, & t);
 		if (cnt) (*cnt) ++;
 		H5Sclose(space);
 		H5Dclose(data);
@@ -474,39 +474,33 @@ std::string prm::DataMissingError::get_name()
 
 void prm::h5_save(hid_t group, const Param & p, const std::string & n)
 {
-  hid_t g = n.size() ? H5Gcreate(group, n.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) : group;
-	std::vector<const std::string *> nl = p.get_names();
-	for (std::vector<const std::string *>::iterator i = nl.begin(); i != nl.end(); i ++) {
-		const std::string & n = * * i;
-		const TagSable * ts = & p.get_var(n);
-		if (! ts->find<tag::Save>()) continue;
-		if (h5_save_nat<bool>(g, ts, n)) continue;
-		if (h5_save_nat<int>(g, ts, n)) continue;
-		if (h5_save_nat<unsigned>(g, ts, n)) continue;
-		if (h5_save_nat<size_t>(g, ts, n)) continue;
-		if (h5_save_nat<double>(g, ts, n)) continue;
-		if (h5_save_nat<std::string>(g, ts, n)) continue;
-		h5_save_nat<Sable>(g, ts, n); // final resort
+	hid_t g = n.size() ? H5Gcreate(group, n.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT) : group;
+	for (auto & i: p.vars) {
+		if (! i.tags.find<tag::Save>()) continue;
+		if (h5_save_nat<bool>(g, i.var, i.name)) continue;
+		if (h5_save_nat<int>(g, i.var, i.name)) continue;
+		if (h5_save_nat<unsigned>(g, i.var, i.name)) continue;
+		if (h5_save_nat<size_t>(g, i.var, i.name)) continue;
+		if (h5_save_nat<double>(g, i.var, i.name)) continue;
+		if (h5_save_nat<std::string>(g, i.var, i.name)) continue;
+		h5_save_nat<Sable>(g, i.var, i.name); // final resort
 	}
 	if (g != group) H5Gclose(g);
 }
 
 size_t prm::h5_load(hid_t group, Param & p, const std::string & n)
 {
-  hid_t g = n.size() ? H5Gopen(group, n.c_str(), H5P_DEFAULT) : group;
+	hid_t g = n.size() ? H5Gopen(group, n.c_str(), H5P_DEFAULT) : group;
 	size_t cnt = 0;
-	std::vector<const std::string *> nl = p.get_names();
-	for (std::vector<const std::string *>::iterator i = nl.begin(); i != nl.end(); i ++) {
-		const std::string & n = * * i;
-		TagSable * ts = & p.get_var(n);
-		if (! ts->find<tag::Save>()) continue;
-		if (h5_load_nat<bool>(g, ts, n, & cnt)) continue;
-		if (h5_load_nat<int>(g, ts, n, & cnt)) continue;
-		if (h5_load_nat<unsigned>(g, ts, n, & cnt)) continue;
-		if (h5_load_nat<size_t>(g, ts, n, & cnt)) continue;
-		if (h5_load_nat<double>(g, ts, n, & cnt)) continue;
-		if (h5_load_nat<std::string>(g, ts, n, & cnt)) continue;
-		h5_load_nat<Sable>(g, ts, n, & cnt); // final resort
+	for (auto i: p.vars) {
+		if (! i.tags.find<tag::Save>()) continue;
+		if (h5_load_nat<bool>(g, i.var, i.name, & cnt)) continue;
+		if (h5_load_nat<int>(g, i.var, i.name, & cnt)) continue;
+		if (h5_load_nat<unsigned>(g, i.var, i.name, & cnt)) continue;
+		if (h5_load_nat<size_t>(g, i.var, i.name, & cnt)) continue;
+		if (h5_load_nat<double>(g, i.var, i.name, & cnt)) continue;
+		if (h5_load_nat<std::string>(g, i.var, i.name, & cnt)) continue;
+		h5_load_nat<Sable>(g, i.var, i.name, & cnt); // final resort
 	}
 	if (g != group) H5Gclose(g);
 	return cnt;
