@@ -146,6 +146,19 @@ namespace prm {
 		virtual void copy_value(TagSable const & /*ts*/) {}
 	};
 
+	class RelaySable :
+		virtual public TagSable
+	{
+		Sable * s;
+	public:
+		RelaySable(Sable * sb) : s(sb) {}
+		virtual ~RelaySable() {}
+		virtual std::string to_str() const {return s->to_str();}
+		virtual std::string a_str() const {return s->a_str();}
+		virtual bool read_str(const std::string & st) {return s->read_str(st);}
+		virtual bool test_str(const std::string & st) const {return s->test_str(st);}
+	};
+
 	// single value
 	template <typename T>
 	class Var :
