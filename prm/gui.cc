@@ -24,8 +24,8 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
 using namespace prm;
 
 // gui::Base
-gui::Base::Base(Taggable & v) :
-	tb(v),
+gui::Base::Base(Taggable const * t) :
+	tb(t),
 	w(0),
 	linked(false),
 	updating(false)
@@ -61,29 +61,29 @@ void gui::Bool::load()
 {
 	if (cb) {
 		updating = true;
-		cb->set_active(vb.get());
+		cb->set_active(vb->get());
 		updating = false;
 	}
 }
 
 void gui::Bool::redo()
 {
-	if (cb) vb.set(cb->get_active());
+	if (cb) vb->set(cb->get_active());
 }
 
 gltk::Widget & gui::Bool::get_widget()
 {
 	if (! cb) {
 		std::string t = "[check]";
-		if (const tag::Name * n = vb.find<tag::Name>()) t = n->text;
+		if (auto n = tb->find<tag::Name>()) t = n->text;
 		cb = new gltk::CheckButton(t);
 		cb->signal_toggled().connect(sigc::mem_fun(* this, & Bool::save));
 	}
 	return * cb;
 }
 
-gui::Bool::Bool(Var<bool> & v) :
-	Base(v),
+gui::Bool::Bool(Taggable const * t, std::shared_ptr<Var<bool>> v) :
+	Base(t),
 	vb(v),
 	cb(0)
 {
@@ -99,14 +99,14 @@ void gui::Int::load()
 {
 	if (hb) {
 		updating = true;
-		sb->set_value(vs.get());
+		sb->set_value(vs->get());
 		updating = false;
 	}
 }
 
 void gui::Int::redo()
 {
-	if (hb) vs.set(int(sb->get_value()));
+	if (hb) vs->set(int(sb->get_value()));
 }
 
 gltk::Widget & gui::Int::get_widget()
@@ -114,15 +114,15 @@ gltk::Widget & gui::Int::get_widget()
 	if (! hb) {
 		hb = new gltk::Box(gltk::ORIENTATION_HORIZONTAL);
 		sb = manage(new gltk::SpinButton);
-		if (const tag::Name * n = vs.find<tag::Name>()) {
+		if (auto n = tb->find<tag::Name>()) {
 			gltk::Label * lb = new gltk::Label(n->text + ':');
 			hb->pack_start(lb);
 			lb->show();
 		}
-		if (const tag::Step * s = vs.find<tag::Step>()) {
+		if (auto s = tb->find<tag::Step>()) {
 			sb->set_increments(1, floor(s->page));
 		}
-		if (const tag::Range * r = vs.find<tag::Range>()) sb->set_range(ceil(r->min), floor(r->max));
+		if (auto r = tb->find<tag::Range>()) sb->set_range(ceil(r->min), floor(r->max));
 		sb->signal_value_changed().connect(sigc::mem_fun(* this, & Int::save));
 		hb->pack_start(sb);
 		sb->show();
@@ -130,8 +130,8 @@ gltk::Widget & gui::Int::get_widget()
 	return * hb;
 }
 
-gui::Int::Int(Var<int> & v) :
-	Base(v),
+gui::Int::Int(Taggable const * t, std::shared_ptr<Var<int>> v) :
+	Base(t),
 	vs(v),
 	hb(0)
 {
@@ -147,7 +147,7 @@ void gui::Select::load()
 {
 	if (hb) {
 		updating = true;
-		cbt->set_active_text(ns->get_name(vs.get()));
+		cbt->set_active_text(ns->get_name(vs->get()));
 		updating = false;
 	}
 }
@@ -155,7 +155,7 @@ void gui::Select::load()
 void gui::Select::redo()
 {
 	if (hb) {
-		vs.set(ns->get_key(cbt->get_active_text()));
+		vs->set(ns->get_key(cbt->get_active_text()));
 	}
 }
 
@@ -164,15 +164,13 @@ gltk::Widget & gui::Select::get_widget()
 	if (! hb) {
 		hb = new gltk::Box(gltk::ORIENTATION_HORIZONTAL);
 		cbt = new gltk::ComboBoxText;
-		if (const tag::Name * n = vs.find<tag::Name>()) {
+		if (auto n = tb->find<tag::Name>()) {
 			gltk::Label * lb = new gltk::Label(n->text + ':');
 			hb->pack_start(lb);
 			lb->show();
 		}
 		std::vector<std::string> n = ns->get_names();
-		for (std::vector<std::string>::const_iterator i = n.begin(); i != n.end(); i ++) {
-			cbt->append(* i);
-		}
+		for (auto i: ns->get_names()) cbt->append(i);
 		cbt->signal_changed().connect(sigc::mem_fun(* this, & Select::save));
 		hb->pack_start(cbt);
 		cbt->show();
@@ -180,12 +178,12 @@ gltk::Widget & gui::Select::get_widget()
 	return * hb;
 }
 
-gui::Select::Select(Var<int> & v) :
-	Base(v),
+gui::Select::Select(Taggable const * t, std::shared_ptr<Var<int>> v) :
+	Base(t),
 	vs(v),
 	hb(0)
 {
-	const tag::Select * s = vs.find<tag::Select>();
+	auto s = tb->find<tag::Select>();
 	ns = & (s->names);
 }
 
@@ -202,14 +200,14 @@ void gui::Size::load()
 {
 	if (hb) {
 		updating = true;
-		sb->set_value(vs.get());
+		sb->set_value(vs->get());
 		updating = false;
 	}
 }
 
 void gui::Size::redo()
 {
-	if (hb) vs.set(size_t(sb->get_value()));
+	if (hb) vs->set(size_t(sb->get_value()));
 }
 
 gltk::Widget & gui::Size::get_widget()
@@ -217,15 +215,15 @@ gltk::Widget & gui::Size::get_widget()
 	if (! hb) {
 		hb = new gltk::Box(gltk::ORIENTATION_HORIZONTAL);
 		sb = new gltk::SpinButton;
-		if (const tag::Name * n = vs.find<tag::Name>()) {
+		if (auto n = tb->find<tag::Name>()) {
 			gltk::Label * lb = new gltk::Label(n->text + ':');
 			hb->pack_start(lb);
 			lb->show();
 		}
-		if (const tag::Step * s = vs.find<tag::Step>()) {
+		if (auto s = tb->find<tag::Step>()) {
 			sb->set_increments(1, floor(s->page));
 		}
-		if (const tag::Range * r = vs.find<tag::Range>()) sb->set_range(ceil(r->min), floor(r->max));
+		if (auto r = tb->find<tag::Range>()) sb->set_range(ceil(r->min), floor(r->max));
 		sb->signal_value_changed().connect(sigc::mem_fun(* this, & Size::save));
 		hb->pack_start(sb);
 		sb->show();
@@ -233,8 +231,8 @@ gltk::Widget & gui::Size::get_widget()
 	return * hb;
 }
 
-gui::Size::Size(Var<size_t> & v) :
-	Base(v),
+gui::Size::Size(Taggable const * t, std::shared_ptr<Var<size_t>> v) :
+	Base(t),
 	vs(v),
 	hb(0)
 {
@@ -252,7 +250,7 @@ void gui::Double::load()
 {
 	if (hb) {
 		updating = true;
-		sb->set_value(vd.get());
+		sb->set_value(vd->get());
 		updating = false;
 	}
 }
@@ -262,7 +260,7 @@ void gui::Double::redo()
 	if (hb) {
 		double v = sb->get_value();
 		if (snap_to_0 && fabs(v / v_step) < 0.01) v = 0; // snap to zero
-		vd.set(v);
+		vd->set(v);
 	}
 }
 
@@ -271,19 +269,19 @@ gltk::Widget & gui::Double::get_widget()
 	if (! hb) {
 		hb = new gltk::Box(gltk::ORIENTATION_HORIZONTAL);
 		sb = new gltk::SpinButton;
-		if (const tag::Name * n = vd.find<tag::Name>()) {
+		if (auto n = tb->find<tag::Name>()) {
 			gltk::Label * lb = new gltk::Label(n->text + ':');
 			hb->pack_start(lb);
 			lb->show();
 		}
-		if (const tag::Step * s = vd.find<tag::Step>()) {
+		if (auto s = tb->find<tag::Step>()) {
 			v_step = s->step;
 			if (v_step > 0) snap_to_0 = true;
 			sb->set_increments(v_step, s->page);
 			double r = log10(s->step);
 			if (r < 0) sb->set_digits(int(ceil(- r)));
 		}
-		if (const tag::Range * r = vd.find<tag::Range>()) sb->set_range(r->min, r->max);
+		if (auto r = tb->find<tag::Range>()) sb->set_range(r->min, r->max);
 		sb->signal_value_changed().connect(sigc::mem_fun(* this, & Double::save));
 		hb->pack_start(sb);
 		sb->show();
@@ -291,8 +289,8 @@ gltk::Widget & gui::Double::get_widget()
 	return * hb;
 }
 
-gui::Double::Double(Var<double> & v) :
-	Base(v),
+gui::Double::Double(Taggable const * t, std::shared_ptr<Var<double>> v) :
+	Base(t),
 	vd(v),
 	hb(0),
 	snap_to_0(false)
@@ -311,14 +309,14 @@ void gui::File::load()
 {
 	if (hb) {
 		updating = true;
-		et->set_text(vs.get());
+		et->set_text(vs->get());
 		updating = false;
 	}
 }
 
 void gui::File::redo()
 {
-	if (hb) vs.set(et->get_text());
+	if (hb) vs->set(et->get_text());
 }
 
 gltk::Widget & gui::File::get_widget()
@@ -326,7 +324,7 @@ gltk::Widget & gui::File::get_widget()
 	if (! hb) {
 		hb = new gltk::Box(gltk::ORIENTATION_HORIZONTAL);
 		et = new gltk::Entry;
-		if (const tag::Name * n = vs.find<tag::Name>()) {
+		if (auto n = tb->find<tag::Name>()) {
 			gltk::Label * lb = new gltk::Label(n->text + ':');
 			hb->pack_start(lb);
 			lb->show();
@@ -339,8 +337,8 @@ gltk::Widget & gui::File::get_widget()
 	return * hb;
 }
 
-gui::File::File(Var<std::string> & v) :
-	Base(v),
+gui::File::File(Taggable const * t, std::shared_ptr<Var<std::string>> v) :
+	Base(t),
 	vs(v),
 	hb(0)
 {
@@ -368,14 +366,14 @@ Gltk::~Gltk()
 
 void Gltk::add(Param & param)
 {
-	for (std::vector<Param::VarEntry>::iterator i = param.vars.begin(); i != param.vars.end(); i ++) if (i->var->find<tag::Control>()) {
-		gui::Base * c = make_ctrl(i->var);
+	for (auto i: param.vars) if (i.tags.find<tag::Control>()) {
+		gui::Base * c = make_ctrl(i);
 		if (c) {
 			ctrls.push_back(c);
 			c->set_linked(); // the Var should be valid for Param
 		}
 		else {
-			std::cerr << "can not add control for " << i->name << '\n';
+			std::cerr << "can not add control for " << i.name << '\n';
 		}
 	}
 }
@@ -466,34 +464,34 @@ sigc::signal<void> & Gltk::signal_changed()
 
 sigc::signal<void> & Gltk::signal_changed(std::string const & name)
 {
-	for (std::vector<gui::Base *>::iterator i = ctrls.begin(); i != ctrls.end(); i ++) if (* i) {
-		if (const tag::Name * n = (* i)->tb.find<tag::Name>()) {
-			if (n->text == name) return (* i)->changed;
+	for (auto i: ctrls) if (i) {
+		if (auto n = i->tb->find<tag::Name>()) {
+			if (n->text == name) return i->changed;
 		}
 	}
 	throw;
 }
 
-gui::Base * Gltk::make_ctrl(std::shared_ptr<Taggable> var) // The Magic happens here!
+gui::Base * Gltk::make_ctrl(Param::VarEntry & e) // The Magic happens here!
 {
 	gui::Base * c = 0;
-	if (auto v = std::dynamic_pointer_cast<Var<bool>>(var)) {
-		c = new gui::Bool(* v);
+	if (auto v = std::dynamic_pointer_cast<Var<bool>>(e.var)) {
+		c = new gui::Bool(&e.tags, v);
 	}
-	else if (auto v = std::dynamic_pointer_cast<Var<int>>(var)) {
-		if (var->find<tag::Select>()) {
-			c = new gui::Select(* v);
+	else if (auto v = std::dynamic_pointer_cast<Var<int>>(e.var)) {
+		if (e.tags.find<tag::Select>()) {
+			c = new gui::Select(&e.tags, v);
 		}
-		else c = new gui::Int(* v);
+		else c = new gui::Int(&e.tags, v);
 	}
-	else if (auto v = std::dynamic_pointer_cast<Var<size_t>>(var)) {
-		c = new gui::Size(* v);
+	else if (auto v = std::dynamic_pointer_cast<Var<size_t>>(e.var)) {
+		c = new gui::Size(&e.tags, v);
 	}
-	else if (auto v = std::dynamic_pointer_cast<Var<double>>(var)) {
-		if (var->find<tag::Step>()) c = new gui::Double(* v);
+	else if (auto v = std::dynamic_pointer_cast<Var<double>>(e.var)) {
+		if (e.tags.find<tag::Step>()) c = new gui::Double(&e.tags, v);
 	}
-	else if (auto v = std::dynamic_pointer_cast<Var<std::string>>(var)) {
-		if (var->find<tag::File>()) c = new gui::File(* v);
+	else if (auto v = std::dynamic_pointer_cast<Var<std::string>>(e.var)) {
+		if (e.tags.find<tag::File>()) c = new gui::File(&e.tags, v);
 	}
 	/*
 	else if (TagSable * v = dynamic_cast<TagSable *>(var)) {

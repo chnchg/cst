@@ -31,33 +31,32 @@ tag::Key::Key(int a_key)
 	key = a_key;
 }
 
-argu::Base::Base(const std::string & n, TagSable & t) :
-	name(n),
-	ts(t),
+argu::Base::Base(Param::VarEntry * v) :
+	v(v),
 	set_altering(0)
 {
 }
 
 void argu::Base::dump(std::ostream & output) const
 {
-	if (const tag::Name * n = ts.find<tag::Name>()) output << n->text;
-	else output << name;
-	output << '=' << ts.to_str();
+	if (auto n = v->tags.find<tag::Name>()) output << n->text;
+	else output << v->name;
+	output << '=' << v->var->to_str();
 }
 
 void argu::Base::set(const std::string & str)
 {
-	ts.read_str(str);
+	v->var->read_str(str);
 }
 
 void argu::Base::addto_parser(arg::Parser & parser)
 {
 	int key = 0;
-	if (const tag::Key * k = ts.find<tag::Key>()) key = k->key;
+	if (auto k = v->tags.find<tag::Key>()) key = k->key;
 	arg::Option & opt = parser.add_opt(key, get_name())
 		.set(& set_altering, true)
 		.show_default();
-	if (const tag::Desc * d = ts.find<tag::Desc>()) opt.help(d->text);
+	if (auto d = v->tags.find<tag::Desc>()) opt.help(d->text);
 	addto_option(opt);
 }
 
@@ -81,18 +80,18 @@ Argu::~Argu()
 void Argu::add(Param & p)
 {
 	if (argus.size()) argus.push_back(0);
-	for (std::vector<Param::VarEntry>::iterator i = p.vars.begin(); i != p.vars.end(); i ++) if (i->var->find<tag::CmdLine>()) {
+	for (auto i: p.vars) if (i.tags.find<tag::CmdLine>()) {
 		argu::Base * c = 0;
 		// The Type infomation for Var<Type> can not be recovered.
 		// So, we are making tabulated translations:
-		if (auto v = std::dynamic_pointer_cast<Var<bool>>(i->var)) c = new argu::Arg<bool>(i->name, * v);
-		else if (auto v = std::dynamic_pointer_cast<Var<int>>(i->var)) c = new argu::Arg<int>(i->name, * v);
-		else if (auto v = std::dynamic_pointer_cast<Var<unsigned>>(i->var)) c = new argu::Arg<unsigned>(i->name, * v);
-		else if (auto v = std::dynamic_pointer_cast<Var<size_t>>(i->var)) c = new argu::Arg<size_t>(i->name, * v);
-		else if (auto v = std::dynamic_pointer_cast<Var<double>>(i->var)) c = new argu::Arg<double>(i->name, * v);
-		else if (auto v = std::dynamic_pointer_cast<Var<std::string>>(i->var)) c = new argu::Arg<std::string>(i->name, * v);
+		if (std::dynamic_pointer_cast<Var<bool>>(i.var)) c = new argu::Arg<bool>(& i);
+		else if (std::dynamic_pointer_cast<Var<int>>(i.var)) c = new argu::Arg<int>(& i);
+		else if (std::dynamic_pointer_cast<Var<unsigned>>(i.var)) c = new argu::Arg<unsigned>(& i);
+		else if (std::dynamic_pointer_cast<Var<size_t>>(i.var)) c = new argu::Arg<size_t>(& i);
+		else if (std::dynamic_pointer_cast<Var<double>>(i.var)) c = new argu::Arg<double>(& i);
+		else if (std::dynamic_pointer_cast<Var<std::string>>(i.var)) c = new argu::Arg<std::string>(& i);
 		if (c) argus.push_back(c);
-		else std::cerr << "can not make command-line for " << i->name << '\n';
+		else std::cerr << "can not make command-line for " << i.name << '\n';
 	}
 }
 

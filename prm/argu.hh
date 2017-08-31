@@ -42,20 +42,19 @@ namespace prm {
 	namespace argu {
 		class Base
 		{
-			std::string name;
-			TagSable & ts;
-			int set_altering;
 		protected:
+			Param::VarEntry * v;
+			int set_altering;
 			virtual void addto_option(arg::Option & opt) = 0;
 			virtual void do_altering() = 0;
 		public:
-			Base(const std::string & n, TagSable & t);
+			Base(Param::VarEntry * v);
 			virtual ~Base() {}
 			void dump(std::ostream & output) const;
 			void set(const std::string & str);
 			void addto_parser(arg::Parser & parser);
 			bool alter();
-			const std::string & get_name() const {return name;}
+			const std::string & get_name() const {return v->name;}
 		};
 
 		template <typename Type> std::string type_word() {return "VALUE";}
@@ -69,25 +68,25 @@ namespace prm {
 		class Arg :
 			virtual public Base
 		{
-			Var<Type> & var;
 			Type altering;
 			void addto_option(arg::Option & opt)
 			{
 				opt.stow(altering);
-				if (const tag::Word * w = var.template find<tag::Word>()) opt.help_word(w->text);
+				if (auto w = v->tags. template find<tag::Word>()) opt.help_word(w->text);
 				else opt.help_word(type_word<Type>());
 			}
 
 			void do_altering()
 			{
-				var.set(altering);
+				if (auto t  = std::dynamic_pointer_cast<Var<Type>>(v->var)) t->set(altering);
+				else throw;
 			}
 		public:
-			Arg(const std::string name, Var<Type> & v) :
-				Base(name, v),
-				var(v),
-				altering(v.get())
+			Arg(Param::VarEntry * v) :
+				Base(v)
 			{
+				if (auto t  = std::dynamic_pointer_cast<Var<Type>>(v->var)) altering = t->get();
+				else throw;
 			}
 		};
 	}

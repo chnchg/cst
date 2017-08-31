@@ -136,6 +136,7 @@ namespace prm {
 		virtual std::string a_str() const {return "";}  // a default string
 		virtual bool read_str(const std::string & s) {return s == "";} // convert from string
 		virtual bool test_str(const std::string & s) const {return s == "";} // check string
+		virtual void copy_val(Sable const & s) {read_str(s.to_str());} // copy value
 	};
 
 	class TagSable :
@@ -147,7 +148,7 @@ namespace prm {
 	};
 
 	class RelaySable :
-		virtual public TagSable
+		virtual public Sable
 	{
 		Sable * s;
 	public:
@@ -162,7 +163,7 @@ namespace prm {
 	// single value
 	template <typename T>
 	class Var :
-		virtual public TagSable
+		virtual public Sable
 	{
 		std::string to_str() const override
 		{
@@ -194,9 +195,9 @@ namespace prm {
 			if (s.fail() || ! s.eof()) return false;
 			return true;
 		}
-		void copy_value(TagSable const & ts) override
+		void copy_val(Sable const & s) override
 		{
-			if (Var<T> const * v = dynamic_cast<Var<T> const *>(& ts)) set(v->get());
+			if (Var<T> const * v = dynamic_cast<Var<T> const *>(& s)) set(v->get());
 		}
 	public:
 		typedef T VarType;
@@ -604,26 +605,27 @@ namespace prm {
 		struct VarEntry
 		{
 			std::string name;
-			std::shared_ptr<TagSable> var;
-			VarEntry(const std::string & n, std::shared_ptr<TagSable> v) :
+			std::shared_ptr<Sable> var;
+			Taggable tags;
+			VarEntry(std::string const & n, std::shared_ptr<Sable> v) :
 				name(n),
 				var(v)
 			{}
 		};
 		std::vector<VarEntry> vars;
 		~Param();
-		TagSable & add_var(const std::string & name, std::shared_ptr<TagSable> v);
+		Taggable & add_var(std::string const & name, std::shared_ptr<Sable> v);
 		// overloaded add_var
 		template <typename Type>
-		TagSable & add_var(const std::string & name, Type & v)
+		Taggable & add_var(std::string const & name, Type & v)
 		{
 			return add_var(name, std::make_shared<Adr<Type>>(v));
 		}
 		// access
-		std::vector<const std::string *> get_names() const;
-		const TagSable & get_var(const std::string & name) const;
-		TagSable & get_var(const std::string & name);
-		void delete_var(const std::string & name);
+		std::vector<std::string> get_names() const;
+		std::shared_ptr<Sable const> get_var(std::string const & name) const;
+		std::shared_ptr<Sable> get_var(std::string const & name);
+		void delete_var(std::string const & name);
 		// conversion to/from text stream
 		void read(std::istream & input);
 		void write(std::ostream & output) const;

@@ -26,15 +26,15 @@ namespace prm {
 	namespace gui {
 		class Base
 		{
-			Taggable & tb;
+		protected:
+			Taggable const * tb;
 			gltk::Widget * w;
 			virtual gltk::Widget & get_widget() = 0;
-		protected:
 			bool linked; // gates the access to variable
 			bool updating; // variable is being updated...
 			virtual void redo() = 0; // actually write value to the variable
 		public:
-			Base(Taggable & v);
+			Base(Taggable const * t);
 			virtual ~Base() {};
 			virtual void load() = 0; // read value from the variable
 			void save(); // write value to varibale, can be used for callback
@@ -47,21 +47,21 @@ namespace prm {
 		class Bool :
 			public Base
 		{
-			Var<bool> & vb;
+			std::shared_ptr<Var<bool>> vb;
 			gltk::CheckButton * cb;
 			// override
 			void load();
 			void redo();
 			gltk::Widget & get_widget();
 		public:
-			Bool(Var<bool> & v);
+			Bool(Taggable const * t, std::shared_ptr<Var<bool>> v);
 			~Bool();
 		};
 
 		class Int :
 			public Base
 		{
-			Var<int> & vs;
+			std::shared_ptr<Var<int>> vs;
 			gltk::Box * hb;
 			gltk::SpinButton * sb;
 			// override
@@ -69,14 +69,14 @@ namespace prm {
 			void redo();
 			gltk::Widget & get_widget();
 		public:
-			Int(Var<int> & v);
+			Int(Taggable const * t, std::shared_ptr<Var<int>> v);
 			~Int();
 		};
 
 		class Select : // select from a NameSet
 			public Base
 		{
-			Var<int> & vs;
+			std::shared_ptr<Var<int>> vs;
 			NameSet const * ns;
 			gltk::Box * hb;
 			gltk::ComboBoxText * cbt;
@@ -85,14 +85,14 @@ namespace prm {
 			void redo();
 			gltk::Widget & get_widget();
 		public:
-			Select(Var<int> & v);
+			Select(Taggable const * t, std::shared_ptr<Var<int>> v);
 			~Select();
 		};
 
 		class Size :
 			public Base
 		{
-			Var<size_t> & vs;
+			std::shared_ptr<Var<size_t>> vs;
 			gltk::Box * hb;
 			gltk::SpinButton * sb;
 			// override
@@ -100,14 +100,14 @@ namespace prm {
 			void redo();
 			gltk::Widget & get_widget();
 		public:
-			Size(Var<size_t> & v);
+			Size(Taggable const * t, std::shared_ptr<Var<size_t>> v);
 			~Size();
 		};
 
 		class Double : // implement with spin button, need tag::Step
 			public Base
 		{
-			Var<double> & vd;
+			std::shared_ptr<Var<double>> vd;
 			gltk::Box * hb;
 			gltk::SpinButton * sb;
 			// override
@@ -118,14 +118,14 @@ namespace prm {
 			bool snap_to_0;
 			double v_step;
 		public:
-			Double(Var<double> & v);
+			Double(Taggable const * t, std::shared_ptr<Var<double>> v);
 			~Double();
 		};
 
 		class File :
 			public Base
 		{
-			Var<std::string> & vs;
+			std::shared_ptr<Var<std::string>> vs;
 			gltk::Box * hb;
 			gltk::Entry * et;
 			// override
@@ -133,7 +133,7 @@ namespace prm {
 			void redo();
 			gltk::Widget & get_widget();
 		public:
-			File(Var<std::string> & v);
+			File(Taggable const * t, std::shared_ptr<Var<std::string>> v);
 			~File();
 		};
 	}
@@ -156,7 +156,7 @@ namespace prm {
 		sigc::signal<void> & signal_changed();
 		sigc::signal<void> & signal_changed(std::string const & var_name); // changed signal for certain item
 
-		static gui::Base * make_ctrl(std::shared_ptr<Taggable> var);
+		static gui::Base * make_ctrl(Param::VarEntry & e);
 	};
 }
 #endif

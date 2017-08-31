@@ -45,54 +45,40 @@ Taggable::~Taggable()
 // Param
 Param::~Param() {}
 
-TagSable & Param::add_var(const std::string & name, std::shared_ptr<TagSable> v)
+Taggable & Param::add_var(std::string const & name, std::shared_ptr<Sable> v)
 {
-	for (std::vector<VarEntry>::iterator i = vars.begin(); i != vars.end(); i ++) if (i->name == name) {
+	for (auto & i: vars) if (i.name == name) {
 		std::cerr << "Duplicate var!\n";
 		abort();
 	}
 	vars.push_back(VarEntry(name, v));
-	return * vars.back().var;
+	return vars.back().tags;
 }
 
-std::vector<const std::string *> Param::get_names() const
+std::vector<std::string> Param::get_names() const
 {
-	std::vector<const std::string *> nl;
-	for (std::vector<VarEntry>::const_iterator i = vars.begin(); i != vars.end(); i ++) nl.push_back(& i->name);
+	std::vector<std::string> nl;
+	for (auto & i: vars) nl.push_back(i.name);
 	return nl;
 }
 
-const TagSable & Param::get_var(const std::string & name) const
+std::shared_ptr<const Sable> Param::get_var(std::string const & name) const
 {
-	std::vector<VarEntry>::const_iterator i = vars.begin();
-	while (i != vars.end()) {
-		if (i->name == name) break;
-		i ++;
-	}
-	if (i == vars.end()) {
-		std::cerr << "Unknown var!\n";
-		abort();
-	}
-	return * i->var;
+	for (auto & i: vars) if (i.name == name) return i.var;
+	std::cerr << "Unknown var!\n";
+	throw;
 }
 
-TagSable & Param::get_var(const std::string & name)
+std::shared_ptr<Sable> Param::get_var(std::string const & name)
 {
-	std::vector<VarEntry>::iterator i = vars.begin();
-	while (i != vars.end()) {
-		if (i->name == name) break;
-		i ++;
-	}
-	if (i == vars.end()) {
-		std::cerr << "Unknown var!\n";
-		throw;
-	}
-	return * i->var;
+	for (auto & i: vars) if (i.name == name) return i.var;
+	std::cerr << "Unknown var!\n";
+	throw;
 }
 
 void Param::delete_var(const std::string & name)
 {
-	for (std::vector<VarEntry>::iterator i = vars.begin(); i != vars.end(); i ++) if (i->name == name) {
+	for (auto i = vars.begin(); i != vars.end(); i ++) if (i->name == name) {
 		vars.erase(i);
 		return;
 	}
@@ -112,8 +98,8 @@ void Param::read(std::istream & input)
 		if (ep == std::string::npos) continue; // skip mal formed lines
 		std::string name = s.substr(0, ep);
 		std::string val = s.substr(ep + 1);
-		for (std::vector<VarEntry>::iterator i = vars.begin(); i != vars.end(); i ++) if (i->name == name) {
-			if (auto ts = std::static_pointer_cast<TagSable>(i->var)) ts->read_str(val);
+		for (auto & i: vars) if (i.name == name) {
+			i.var->read_str(val);
 			break;
 		}
 	}
@@ -121,18 +107,16 @@ void Param::read(std::istream & input)
 
 void Param::write(std::ostream & output) const
 {
-	for (std::vector<VarEntry>::const_iterator i = vars.begin(); i != vars.end(); i ++) {
-		output << i->name << '=';
-		if (auto ts = std::static_pointer_cast<TagSable>(i->var)) output << ts->to_str();
+	for (auto & i: vars) {
+		output << i.name << '=';
+		if (auto ts = std::static_pointer_cast<Sable>(i.var)) output << ts->to_str();
 		output << '\n';
 	}
 }
 
 void Param::copy(Param const & p)
 {
-	for (std::vector<VarEntry>::iterator i = vars.begin(); i != vars.end(); i ++)
-	for (std::vector<VarEntry>::const_iterator j = p.vars.begin(); j != p.vars.end(); j ++)
-	if (i->name == j->name) i->var->copy_value(* j->var);
+	for (auto & i: vars) for (auto & j: p.vars) if (i.name == j.name) i.var->copy_val(* j.var);
 }
 
 void Param::append(Param const & p)
