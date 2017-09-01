@@ -124,106 +124,84 @@ void Param::append(Param const & p)
 	for (auto v: p.vars) vars.push_back(v);
 }
 
-Struct::Struct() :
-	res(0)
-{}
+Struct::Struct() : res(0) {}
 
-Struct::~Struct()
-{
-	while (list.size()) {
-		delete list.back().mem;
-		list.pop_back();
-	};
-	if (res) delete res;
-}
+Struct::~Struct() {}
 
-Struct::Member * Struct::find_member(const std::string & n)
+Struct::MemEntry * Struct::find_member(std::string const & n)
 {
-	for (std::vector<Entry>::iterator i = list.begin(); i != list.end(); i ++) {
-		if (n == i->name) return i->mem;
-	}
+	for (auto & i: list) if (n == i.name) return & i;
 	return 0;
 }
 
-const Struct::Member * Struct::find_member(const std::string & n) const
+Struct::MemEntry const * Struct::find_member(std::string const & n) const
 {
-	for (std::vector<Entry>::const_iterator i = list.begin(); i != list.end(); i ++) {
-		if (n == i->name) return i->mem;
-	}
+	for (auto & i: list) if (n == i.name) return & i;
 	return 0;
 }
 
-void Struct::set_resolver(Res * r)
+void Struct::set_resolver(std::shared_ptr<Res> r)
 {
-	if (res) delete res;
 	res = r;
 }
 
-std::vector<const std::string *> Struct::get_names() const
+std::vector<std::string> Struct::get_names() const
 {
-	std::vector<const std::string *> ns;
-	for (std::vector<Entry>::const_iterator i = list.begin(); i != list.end(); i ++) ns.push_back(& i->name);
+	std::vector<std::string> ns;
+	for (auto & i: list) ns.push_back(i.name);
 	return ns;
 }
+
 // prm::Compound
-Compound::~Compound()
+Compound::~Compound() {}
+
+Array & Compound::add_array(const std::string & name, std::shared_ptr<Array> elm)
 {
-	while (list.size()) {
-		delete list.back().elm;
-		list.pop_back();
-	}
+	list.push_back(Entry{name, elm});
+	return * list.back().elm;
 }
 
-Array & Compound::add_array(const std::string & name, Array * elm)
-{
-	Entry e;
-	e.name = name;
-	e.elm = elm;
-	list.push_back(e);
-	return * elm;
-}
-
-Struct & Compound::add_struct(Struct * elm)
+Struct & Compound::add_struct(std::shared_ptr<Struct> elm)
 {
 	add_array("", elm);
 	return * elm;
 }
 
-TagSable * Compound::make_var(const std::string & name, Index * idx)
+std::shared_ptr<Sable> Compound::make_var(const std::string & name, Index * idx)
 {
-	for (std::vector<Entry>::iterator i = list.begin(); i != list.end(); i ++) {
-		if (Struct * s = dynamic_cast<Struct *>(i->elm)) {
-			if (Struct::Member * m = s->find_member(name)) {
-				return m->make_var(* s->res, idx);
+	for (auto & i: list) {
+		if (auto s = std::dynamic_pointer_cast<Struct>(i.elm)) {
+			if (auto m = s->find_member(name)) {
+				return m->mem->make_var(* s->res, idx);
 			}
 		}
-		else if (i->name == name) return i->elm->make_var(idx);
+		else if (i.name == name) return i.elm->make_var(idx);
 	}
 	return 0;
 }
 
-const TagSable * Compound::make_var(const std::string & name, Index * idx) const
+std::shared_ptr<Sable const> Compound::make_var(std::string const & name, Index * idx) const
 {
-	for (std::vector<Entry>::const_iterator i = list.begin(); i != list.end(); i ++) {
-		if (const Struct * s = dynamic_cast<const Struct *>(i->elm)) {
-			if (const Struct::Member * m = s->find_member(name)) {
-				return m->make_var(* s->res, idx);
+	for (auto i: list) {
+		if (auto s = std::dynamic_pointer_cast<Struct const>(i.elm)) {
+			if (auto m = s->find_member(name)) {
+				return m->mem->make_var(* s->res, idx);
 			}
 		}
-		else if (i->name == name) return i->elm->make_var(idx);
+		else if (i.name == name) return i.elm->make_var(idx);
 	}
 	return 0;
 }
 
-std::vector<const std::string *> Compound::get_names() const
+std::vector<std::string> Compound::get_names() const
 {
-	std::vector<const std::string *> ns;
-	for (std::vector<Entry>::const_iterator i = list.begin(); i != list.end(); i ++) {
-		if (const Struct * s = dynamic_cast<const Struct *>(i->elm)) {
-			std::vector<const std::string *> sn = s->get_names();
+	std::vector<std::string> ns;
+	for (auto i: list) {
+		if (auto s = std::dynamic_pointer_cast<Struct const>(i.elm)) {
+			std::vector<std::string> sn = s->get_names();
 			ns.insert(ns.end(), sn.begin(), sn.end());
 		}
-		else ns.push_back(& i->name);
+		else ns.push_back(i.name);
 	}
 	return ns;
 }
