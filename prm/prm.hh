@@ -107,8 +107,10 @@ namespace prm {
 	{
 		std::vector<tag::Base *> tag_list;
 	protected:
-		void copy_tags(const Taggable & tgb); // deep copy
+		void copy_tags(Taggable const & tgb); // deep copy
 	public:
+		Taggable() {}
+		Taggable(Taggable const & t);
 		virtual ~Taggable();
 		template <typename TG>
 		Taggable & operator << (const TG & tg)
@@ -365,15 +367,22 @@ namespace prm {
 		template <typename S> void set_sizer(std::vector<S> & v) {szr = std::make_shared<SzrVec<S>>(v);}
 		virtual void set_size(size_t new_size) {if (szr) szr->set_size(new_size);}
 		virtual size_t get_size() const {return szr ? szr->get_size() : 0;}
-		virtual std::shared_ptr<Sable> make_var(Index * /*idx*/ = 0) = 0;
+	};
+
+	// Array of sable values
+	class ArrayS :
+		virtual public Array
+	{
+	public:
+		virtual std::shared_ptr<Sable> make_var(std::shared_ptr<Index> idx = 0) = 0;
 	};
 
 	// Array of values with a type
 	template <typename T>
 	class Arr :
-		virtual public Array
+		virtual public ArrayS
 	{
-		// virtual Sable * make_var(Index * idx);
+		std::shared_ptr<Sable> make_var(std::shared_ptr<Index> idx) override;
 	public:
 		typedef T Type;
 		virtual void set(size_t i, T val) = 0;
@@ -552,23 +561,19 @@ namespace prm {
 		Arr<T> & arr;
 		std::shared_ptr<Index> idx;
 
-		void set(T v)
+		void set(T v) override
 		{
 			arr.set(idx ? idx->get() : 0, v);
 		}
 
-		T get() const
+		T get() const override
 		{
 			return arr.get(idx ? idx->get() : 0);
 		}
 	public:
-		Idx(Arr<T> & a, Index * i = 0) :
-			arr(a),
-			idx(i)
-		{
-			this->copy_tags(a);
-		}
-
+		Idx(Arr<T> & a, std::shared_ptr<Index> i = 0) :
+			arr(a), idx(i)
+		{}
 		virtual ~Idx() {}
 	};
 
@@ -616,8 +621,8 @@ namespace prm {
 		struct Member
 		{
 			virtual ~Member() {}
-			virtual std::shared_ptr<Sable> make_var(Res & /* res */, Index * /* idx */ = 0) {return 0;}
-			virtual std::shared_ptr<Sable const> make_var(Res & /* res */, Index * /* idx */ = 0) const {return 0;}
+			virtual std::shared_ptr<Sable> make_var(std::shared_ptr<Res> /* res */, std::shared_ptr<Index> /* idx */ = 0) {return 0;}
+			virtual std::shared_ptr<Sable const> make_var(std::shared_ptr<Res> /* res */, std::shared_ptr<Index> /* idx */ = 0) const {return 0;}
 		};
 
 		// Member with specific type
@@ -625,8 +630,8 @@ namespace prm {
 		class MemT :
 			virtual public Member
 		{
-			std::shared_ptr<Sable> make_var(Res & res, Index * idx) override;
-			std::shared_ptr<Sable const> make_var(Res & res, Index * idx) const override;
+			std::shared_ptr<Sable> make_var(std::shared_ptr<Res> res, std::shared_ptr<Index> idx) override;
+			std::shared_ptr<Sable const> make_var(std::shared_ptr<Res> res, std::shared_ptr<Index> idx) const override;
 		public:
 			typedef T Type;
 			virtual void set(std::shared_ptr<Strt> s, T v) = 0;
@@ -790,7 +795,7 @@ namespace prm {
 
 		std::vector<Entry> list;
 		~Compound();
-		Array & add_array(std::string const & name, std::shared_ptr<Array> elm);
+		ArrayS & add_arrays(std::string const & name, std::shared_ptr<ArrayS> elm);
 		Struct & add_struct(std::shared_ptr<Struct> elm); // have names already
 
 		// Add linear array
@@ -802,28 +807,26 @@ namespace prm {
 			return * a;
 		}
 
-		std::shared_ptr<Sable> make_var(std::string const & name, Index * idx = 0);
-		std::shared_ptr<Sable const> make_var(std::string const & name, Index * idx = 0) const;
+		std::shared_ptr<Sable> make_var(std::string const & name, std::shared_ptr<Index> idx = 0);
+		std::shared_ptr<Sable const> make_var(std::string const & name, std::shared_ptr<Index> idx = 0) const;
 		std::vector<std::string> get_names() const;
 	};
 }
 
-/*
 template <typename T>
 std::shared_ptr<prm::Sable> prm::Arr<T>::make_var(std::shared_ptr<Index> idx)
 {
 	return std::make_shared<Idx<T>>(* this, idx);
 }
-*/
 
 template <typename T>
-std::shared_ptr<prm::Sable> prm::Struct::MemT<T>::make_var(Res & res, Index * idx)
+std::shared_ptr<prm::Sable> prm::Struct::MemT<T>::make_var(std::shared_ptr<Res> res, std::shared_ptr<Index> idx)
 {
 	return std::make_shared<IStrMRes<T>>(* this, res, idx);
 }
 
 template <typename T>
-std::shared_ptr<prm::Sable const> prm::Struct::MemT<T>::make_var(Res & res, Index * idx) const
+std::shared_ptr<prm::Sable const> prm::Struct::MemT<T>::make_var(std::shared_ptr<Res> res, std::shared_ptr<Index> idx) const
 {
 	return std::make_shared<IStrMRes<T>>(* const_cast<MemT<T> *>(this), res, idx);
 }

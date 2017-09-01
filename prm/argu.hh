@@ -43,18 +43,21 @@ namespace prm {
 		class Base
 		{
 		protected:
-			Param::VarEntry * v;
+			std::string name;
+			Taggable tags;
 			int set_altering;
 			virtual void addto_option(arg::Option & opt) = 0;
 			virtual void do_altering() = 0;
+			virtual std::shared_ptr<Sable> get_var() = 0;
+			virtual std::shared_ptr<Sable const> get_var() const = 0;
 		public:
-			Base(Param::VarEntry * v);
+			Base(Param::VarEntry const & v);
 			virtual ~Base() {}
 			void dump(std::ostream & output) const;
 			void set(const std::string & str);
 			void addto_parser(arg::Parser & parser);
 			bool alter();
-			const std::string & get_name() const {return v->name;}
+			std::string const & get_name() const;
 		};
 
 		template <typename Type> std::string type_word() {return "VALUE";}
@@ -68,32 +71,36 @@ namespace prm {
 		class Arg :
 			virtual public Base
 		{
+			std::shared_ptr<Var<Type>> var;
 			Type altering;
-			void addto_option(arg::Option & opt)
+			void addto_option(arg::Option & opt) override
 			{
 				opt.stow(altering);
-				if (auto w = v->tags. template find<tag::Word>()) opt.help_word(w->text);
+				if (auto w = tags. template find<tag::Word>()) opt.help_word(w->text);
 				else opt.help_word(type_word<Type>());
 			}
-
-			void do_altering()
-			{
-				if (auto t  = std::dynamic_pointer_cast<Var<Type>>(v->var)) t->set(altering);
-				else throw;
-			}
+			void do_altering() override {var->set(altering);}
+			std::shared_ptr<Sable> get_var() override {return var;}
+			std::shared_ptr<Sable const> get_var() const override {return var;}
 		public:
-			Arg(Param::VarEntry * v) :
-				Base(v)
+			Arg(Param::VarEntry const & v) :
+				Base(v),
+				var(std::dynamic_pointer_cast<Var<Type>>(v.var))
 			{
-				if (auto t  = std::dynamic_pointer_cast<Var<Type>>(v->var)) altering = t->get();
-				else throw;
+				if (! var) throw;
+				altering = var->get();
+			}
+			static std::shared_ptr<Arg<Type>> make(Param::VarEntry const & v)
+			{
+				if (std::dynamic_pointer_cast<Var<Type>>(v.var)) return std::make_shared<Arg<Type>>(v);
+				return 0;
 			}
 		};
 	}
 
 	class Argu
 	{
-		std::vector<argu::Base *> argus;
+		std::vector<std::shared_ptr<argu::Base>> argus;
 	public:
 		~Argu();
 		// Setup

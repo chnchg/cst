@@ -35,6 +35,66 @@
 #endif
 #include "sigc.hh"
 namespace gltk {
+	class Adjustment
+	{
+		sigc::signal<void> changed;
+		sigc::signal<void> value_changed;
+	protected:
+		double value;
+		double lower;
+		double upper;
+		double step_increment;
+		double page_increment;
+		double page_size;
+		virtual void on_value_changed() {};
+	public:
+		Adjustment(
+			double value,
+			double lower,
+			double upper,
+			double step_increment = 1,
+			double page_increment = 10,
+			double page_size = 0
+		);
+		static Adjustment * create(
+			double value,
+			double lower,
+			double upper,
+			double step_increment = 1,
+			double page_increment = 10,
+			double page_size = 0
+		);
+		void configure(
+			double value,
+			double lower,
+			double upper,
+			double step_increment=1,
+			double page_increment=10,
+			double page_size=0
+		);
+		double get_value() const;
+		void set_value(double value);
+		void step_up();
+		void step_down();
+		void page_up();
+		void page_down();
+		void set_step_increment(double step_increment);
+		void set_page_increment(double page_increment);
+		double get_upper() const {return upper;}
+		void set_upper (double upper);
+		double get_lower() const {return lower;}
+		void set_lower (double lower);
+		double get_page_size() const {return page_size;}
+		void set_page_size(double ps);
+		sigc::signal<void> & signal_changed();
+		sigc::signal<void> & signal_value_changed();
+	};
+	enum Align {
+		ALIGN_FILL,
+		ALIGN_START,
+		ALIGN_END,
+		ALIGN_CENTER
+	};
 	class Container;
 	class Window;
 	struct Allocation
@@ -161,66 +221,6 @@ namespace gltk {
 		void show_all_children(bool recursive = true);
 		void set_grabber(Widget * child, bool grab = true);
 		virtual bool focus_on(Widget * child);
-	};
-	class Adjustment
-	{
-		sigc::signal<void> changed;
-		sigc::signal<void> value_changed;
-	protected:
-		double value;
-		double lower;
-		double upper;
-		double step_increment;
-		double page_increment;
-		double page_size;
-		virtual void on_value_changed() {};
-	public:
-		Adjustment(
-			double value,
-			double lower,
-			double upper,
-			double step_increment = 1,
-			double page_increment = 10,
-			double page_size = 0
-		);
-		static Adjustment * create(
-			double value,
-			double lower,
-			double upper,
-			double step_increment = 1,
-			double page_increment = 10,
-			double page_size = 0
-		);
-		void configure(
-			double value,
-			double lower,
-			double upper,
-			double step_increment=1,
-			double page_increment=10,
-			double page_size=0
-		);
-		double get_value() const;
-		void set_value(double value);
-		void step_up();
-		void step_down();
-		void page_up();
-		void page_down();
-		void set_step_increment(double step_increment);
-		void set_page_increment(double page_increment);
-		double get_upper() const {return upper;}
-		void set_upper (double upper);
-		double get_lower() const {return lower;}
-		void set_lower (double lower);
-		double get_page_size() const {return page_size;}
-		void set_page_size(double ps);
-		sigc::signal<void> & signal_changed();
-		sigc::signal<void> & signal_value_changed();
-	};
-	enum Align {
-		ALIGN_FILL,
-		ALIGN_START,
-		ALIGN_END,
-		ALIGN_CENTER
 	};
 	class Bin :
 		public virtual Container
