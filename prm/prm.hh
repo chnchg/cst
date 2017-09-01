@@ -32,6 +32,7 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
 #define final
 #endif
 namespace prm {
+	// Tags for labelling properties of variables/parameters
 	namespace tag {
 		class Base
 		{
@@ -127,7 +128,7 @@ namespace prm {
 		}
 	};
 
-	// Streamable (can be serialized)
+	// Streamable (can be serialized, into a string)
 	class Sable
 	{
 	public:
@@ -139,28 +140,7 @@ namespace prm {
 		virtual void copy_val(Sable const & s) {read_str(s.to_str());} // copy value
 	};
 
-	class TagSable :
-		virtual public Taggable,
-		virtual public Sable
-	{
-	public:
-		virtual void copy_value(TagSable const & /*ts*/) {}
-	};
-
-	class RelaySable :
-		virtual public Sable
-	{
-		Sable * s;
-	public:
-		RelaySable(Sable * sb) : s(sb) {}
-		virtual ~RelaySable() {}
-		virtual std::string to_str() const {return s->to_str();}
-		virtual std::string a_str() const {return s->a_str();}
-		virtual bool read_str(const std::string & st) {return s->read_str(st);}
-		virtual bool test_str(const std::string & st) const {return s->test_str(st);}
-	};
-
-	// single value
+	// A single streamable value with a type
 	template <typename T>
 	class Var :
 		virtual public Sable
@@ -204,17 +184,15 @@ namespace prm {
 		virtual void set(T v) = 0;
 		virtual T get() const = 0;
 	};
-	// addressed value, this is terminal variable
+
+	// An addressed value, this is terminal variable
 	template <typename T>
 	class Adr :
 		virtual public Var<T>
 	{
 		T & va;
 	public:
-		Adr(T & v) :
-			va(v)
-		{
-		}
+		Adr(T & v) : va(v) {}
 
 		void set(T v) override
 		{
@@ -226,7 +204,8 @@ namespace prm {
 			return va;
 		}
 	};
-	// value with member function access
+
+	// A value with member function access
 	template <typename Cls, typename Type>
 	class Fun :
 		virtual public Var<Type>
@@ -251,6 +230,8 @@ namespace prm {
 			return (obj.* get_f)();
 		}
 	};
+
+	// An index refering to an element of an array/list
 	class Index
 	{
 	public:
@@ -258,6 +239,7 @@ namespace prm {
 		virtual size_t get() const = 0;
 	};
 
+	// Simple index that is just a number
 	class IndexConst :
 		virtual public Index
 	{
@@ -268,6 +250,8 @@ namespace prm {
 			idx(i)
 		{}
 	};
+
+	// Indirect index refering to a variable
 	class IndexRef :
 		virtual public Index
 	{
@@ -278,6 +262,8 @@ namespace prm {
 			idx(i)
 		{}
 	};
+
+	// Index that get the actual value by calling a member function
 	template <typename T>
 	class IndexMemFun :
 		virtual public Index
@@ -294,7 +280,8 @@ namespace prm {
 			ptr(p)
 		{}
 	};
-	// method to get and set the size of arrays
+
+	// An interface to get and set the size of arrays
 	class Sizer
 	{
 	public:
@@ -303,7 +290,7 @@ namespace prm {
 		virtual size_t get_size() const {return 0;}
 	};
 
-	// read-only sizer referencing a size_t variable
+	// Read-only sizer referencing a size_t variable
 	class SzrRef :
 		public Sizer
 	{
@@ -319,7 +306,7 @@ namespace prm {
 		{}
 	};
 
-	// using member functions to get/set size
+	// Using member functions to get/set size
 	template <typename Cls>
 	class SzrFun :
 		public Sizer
@@ -344,13 +331,10 @@ namespace prm {
 		}
 	public:
 		SzrFun(Cls & c, void (Cls::* sf)(size_t), size_t (Cls::* gf)() const) :
-			obj(c),
-			ss_f(sf),
-			gs_f(gf)
-		{}
+			obj(c), ss_f(sf), gs_f(gf) {}
 	};
 
-	// sizer for std::vector
+	// Sizer for std::vector
 	template <typename S>
 	class SzrVec :
 		public Sizer
@@ -367,35 +351,36 @@ namespace prm {
 	public:
 		SzrVec(std::vector<S> & v) : v(v) {}
 	};
+
 	// Array
-	class Array :
-		virtual public Taggable
+	class Array
 	{
-		Sizer * szr;
+		std::shared_ptr<Sizer> szr;
 	public:
 		Array() : szr(0) {}
-		virtual ~Array() {delete szr;}
+		virtual ~Array() {}
 
-		virtual void set_sizer(Sizer * sizer) {delete szr; szr = sizer;}
-		void set_sizer(size_t & sz) {delete szr; szr = new SzrRef(sz);}
-		template <typename S> void set_sizer(std::vector<S> & v) {delete szr; szr = new SzrVec<S>(v);}
+		virtual void set_sizer(std::shared_ptr<Sizer> sizer) {szr = sizer;}
+		void set_sizer(size_t & sz) {szr = std::make_shared<SzrRef>(sz);}
+		template <typename S> void set_sizer(std::vector<S> & v) {szr = std::make_shared<SzrVec<S>>(v);}
 		virtual void set_size(size_t new_size) {if (szr) szr->set_size(new_size);}
 		virtual size_t get_size() const {return szr ? szr->get_size() : 0;}
-		virtual TagSable * make_var(Index * /*idx*/ = 0) {return 0;}
+		virtual std::shared_ptr<Sable> make_var(Index * /*idx*/ = 0) = 0;
 	};
 
-	// Array of values
+	// Array of values with a type
 	template <typename T>
 	class Arr :
 		virtual public Array
 	{
-		virtual TagSable * make_var(Index * idx);
+		// virtual Sable * make_var(Index * idx);
 	public:
 		typedef T Type;
 		virtual void set(size_t i, T val) = 0;
 		virtual T get(size_t i) const = 0;
 	};
-	// linear array
+
+	// Linear array
 	template <typename Type>
 	class ArrLin :
 		virtual public Arr<Type>
@@ -412,11 +397,10 @@ namespace prm {
 			return arr[i];
 		}
 	public:
-		ArrLin(Type * & arr_addr) :
-			arr(arr_addr)
-		{}
+		ArrLin(Type * & arr_addr) : arr(arr_addr) {}
 	};
-	// array with functional access
+
+	// Array accessed through member functions
 	template <typename C, typename T>
 	class ArrFun :
 		virtual public Arr<T>
@@ -436,21 +420,17 @@ namespace prm {
 		}
 	public:
 		ArrFun(C & c, void (C::* sf)(size_t, T), T (C::* gf)(size_t) const) :
-			obj(c),
-			set_f(sf),
-			get_f(gf)
-		{}
+			obj(c), set_f(sf), get_f(gf) {}
 
-		~ArrFun()
-		{
-		}
+		~ArrFun() {}
 
 		void set_sizer(void (C::* sf)(size_t), size_t (C::* gf)() const) override
 		{
 			Arr<T>::set_sizer(new SzrFun<C>(obj, sf, gf));
 		}
 	};
-	// array that is a vector
+
+	// Array that is a vector
 	template <typename T>
 	class ArrVec :
 		virtual public Arr<T>
@@ -471,121 +451,115 @@ namespace prm {
 			Array::set_sizer(v);
 		}
 	};
-	// some type or struct
+
+	// Abstraction of some type or struct
 	struct Strt
 	{
 		virtual ~Strt() {}
 	};
-	// the actual type
+
+	// The actual type
 	template <typename S>
 	struct Stt :
 		public Strt
 	{
 		S & s;
-		Stt(S & ns) :
-			s(ns)
-		{}
+		Stt(S & ns) : s(ns) {}
 	};
-	// resolver for certain type or struct
+
+	// Resolver for certain type or struct, it resolves to a pointer to the Strt
 	class Res
 	{
 	public:
 		virtual ~Res() {}
-		virtual Strt * get(size_t) = 0;
+		virtual std::shared_ptr<Strt> get(size_t) = 0;
 	};
-	// resolver for a C array
+
+	// Resolver for a C array
 	template <typename S>
 	class ARes :
 		public Res
 	{
 		S * & p;
-		Strt * get(size_t i) {return new Stt<S>(p[i]);}
+		std::shared_ptr<Strt> get(size_t i) override {return std::make_shared<Stt<S>>(p[i]);}
 	public:
 		ARes(S * & p) : p(p) {}
 	};
-	// resolver implemented with member functions
+
+	// Resolver implemented with member functions
 	template <typename C>
 	class CRes :
 		public Res
 	{
 		C & cls;
-		Strt * (C::* ptr)(size_t);
+		std::shared_ptr<Strt> (C::* ptr)(size_t);
 
-		Strt * get(size_t i)
+		std::shared_ptr<Strt> get(size_t i) override
 		{
 			return (cls.* ptr)(i);
 		}
 	public:
 		CRes(C & c, Strt * (C::* p)(size_t)) :
-			cls(c),
-			ptr(p)
-		{}
+			cls(c), ptr(p) {}
 	};
-	// resolver for a std::vector
+
+	// Resolver for a std::vector
 	template <typename S>
 	class VRes :
 		public Res
 	{
 		std::vector<S> & v;
-		Strt * get(size_t i) {return new Stt<S>(v[i]);}
+		std::shared_ptr<Strt> get(size_t i) override {return std::make_shared<Stt<S>>(v[i]);}
 	public:
 		VRes(std::vector<S> & v) : v(v) {}
 	};
-	// array with resolver access
+
+	// Array with resolver access
 	template <typename T>
 	class ArrRes :
 		virtual public Arr<T>
 	{
-		Res * res;
+		std::shared_ptr<Res> res;
 
 		void set(size_t i, T val)
 		{
 			if (! res) return;
-			Strt * st = res->get(i);
-			dynamic_cast<Stt<T> *>(st)->s = val;
-			delete st;
+			auto st = res->get(i);
+			std::dynamic_pointer_cast<Stt<T>>(st)->s = val;
 		}
 
 		T get(size_t i) const
 		{
 			if (! res) return T();
-			std::unique_ptr<Strt> st(res->get(i));
-			return dynamic_cast<const Stt<T> *>(st.get())->s;
+			auto st = res->get(i);
+			return std::dynamic_pointer_cast<Stt<T> const>(st)->s;
 		}
 	public:
-		ArrRes() :
-			res(0)
-		{}
+		ArrRes() : res(0) {}
+		~ArrRes() {}
 
-		~ArrRes()
+		void set_resolver(std::shared_ptr<Res> re)
 		{
-			delete res;
-		}
-
-		void set_resolver(Res * re)
-		{
-			delete res;
 			res = re;
 		}
 	};
-	// indexed item in an array
+
+	// Indexed item in an array, the index can vary
 	template <typename T>
 	class Idx :
 		virtual public Var<T>
 	{
 		Arr<T> & arr;
-		Index * idx;
+		std::shared_ptr<Index> idx;
 
 		void set(T v)
 		{
-			size_t i = idx ? idx->get() : 0;
-			arr.set(i, v);
+			arr.set(idx ? idx->get() : 0, v);
 		}
 
 		T get() const
 		{
-			size_t i = idx ? idx->get() : 0;
-			return arr.get(i);
+			return arr.get(idx ? idx->get() : 0);
 		}
 	public:
 		Idx(Arr<T> & a, Index * i = 0) :
@@ -595,11 +569,10 @@ namespace prm {
 			this->copy_tags(a);
 		}
 
-		virtual ~Idx()
-		{
-			delete idx;
-		}
+		virtual ~Idx() {}
 	};
+
+	// Parameter manager
 	struct Param
 	{
 		struct VarEntry
@@ -634,222 +607,224 @@ namespace prm {
 		// merge in another Param
 		void append(Param const & p);
 	};
+
+	// Array of structures
 	struct Struct :
 		virtual public Array
 	{
-		class Member :
-			virtual public Taggable
+		// Member of the Struct
+		struct Member
 		{
-		public:
 			virtual ~Member() {}
-			virtual TagSable * make_var(Res & /* res */, Index * /* idx */ = 0) {return 0;}
-			virtual const TagSable * make_var(Res & /* res */, Index * /* idx */ = 0) const {return 0;}
+			virtual std::shared_ptr<Sable> make_var(Res & /* res */, Index * /* idx */ = 0) {return 0;}
+			virtual std::shared_ptr<Sable const> make_var(Res & /* res */, Index * /* idx */ = 0) const {return 0;}
 		};
-		// member with specific type
+
+		// Member with specific type
 		template <typename T>
 		class MemT :
 			virtual public Member
 		{
-			TagSable * make_var(Res & res, Index * idx);
-			const TagSable * make_var(Res & res, Index * idx) const;
+			std::shared_ptr<Sable> make_var(Res & res, Index * idx) override;
+			std::shared_ptr<Sable const> make_var(Res & res, Index * idx) const override;
 		public:
 			typedef T Type;
-			virtual void set(Strt * s, T v) = 0;
-			virtual T get(const Strt * s) const = 0;
+			virtual void set(std::shared_ptr<Strt> s, T v) = 0;
+			virtual T get(std::shared_ptr<Strt const> s) const = 0;
 		};
+
+		// Member accessed through member pointer
 		template <typename S, typename T>
 		class Mem :
-			virtual public MemT<T> // access through member pointer
+			virtual public MemT<T>
 		{
 			T S::* ptr;
 
-			void set(Strt * s, T v)
+			void set(std::shared_ptr<Strt> s, T v) override
 			{
-				dynamic_cast<Stt<S> *>(s)->s.* ptr = v;
+				std::dynamic_pointer_cast<Stt<S>>(s)->s.* ptr = v;
 			}
 
-			T get(const Strt * s) const
+			T get(std::shared_ptr<Strt const> s) const override
 			{
-				return dynamic_cast<const Stt<S> *>(s)->s.* ptr;
+				return std::dynamic_pointer_cast<Stt<S> const>(s)->s.* ptr;
 			}
 		public:
-			Mem(T S::* p) :
-				ptr(p)
-			{}
+			Mem(T S::* p) : ptr(p) {}
 		};
-		struct Entry
+
+		struct MemEntry
 		{
 			std::string name;
-			Member * mem;
+			std::shared_ptr<Member> mem;
+			Taggable tags;
 		};
-		std::vector<Entry> list;
-		Res * res;
+
+		std::vector<MemEntry> list;
+		std::shared_ptr<Res> res;
+
 		Struct();
 		~Struct();
+
 		template <typename S, typename T>
-		Member & add_member(const std::string & n, T S::* ptr)
+		Taggable & add_member(std::string const & n, T S::* ptr)
 		{
-			Entry e;
-			e.name = n;
-			e.mem = new Mem<S, T>(ptr);
-			list.push_back(e);
-			return * e.mem;
+			list.push_back(MemEntry{n,std::make_shared<Mem<S,T>>(ptr),Taggable()});
+			return list.back().tags;
 		}
-		Member * find_member(const std::string & n);
-		const Member * find_member(const std::string & n) const;
-		void set_resolver(Res * r);
+
+		MemEntry * find_member(std::string const & n);
+		MemEntry const * find_member(std::string const & n) const;
+		void set_resolver(std::shared_ptr<Res> r);
 
 		template <typename C>
 		void set_resolver(C & c, Strt * (C::* p)(size_t))
 		{
-			delete res;
-			res = new CRes<C>(c, p);
+			res = std::make_shared<CRes<C>>(c, p);
 		}
+
 		template <typename S>
 		void set_resolver(S * & p)
 		{
-			delete res;
-			res = new ARes<S>(p);
+			res = std::make_shared<ARes<S>>(p);
 		}
+
 		template <typename S>
 		void set_resolver(std::vector<S> & v)
 		{
-			delete res;
-			res = new VRes<S>(v);
+			res = std::make_shared<VRes<S>>(v);
 		}
-		std::vector<const std::string *> get_names() const;
+
+		std::vector<std::string> get_names() const;
 	};
-	// member of a struct
+
+	// Sable with type that is a Member of a struct
 	template <typename T>
 	class StrM :
 		virtual public Var<T>
 	{
 		Struct::MemT<T> & mem;
 
-		void set(T v)
+		void set(T v) override
 		{
-			if (Strt * s = get_struct()) {
-				mem.set(s, v);
-				delete s;
-			}
+			if (auto s = get_struct()) mem.set(s, v);
 		}
-		T get() const
+
+		T get() const override
 		{
-			if (Strt * s = get_struct()) {
-				T t = mem.get(s);
-				delete s;
-				return t;
-			}
-			return T();
+			if (auto s = get_struct()) return mem.get(s);
+			else return T();
 		}
+
 	protected:
-		virtual Strt * get_struct() const = 0;
+		virtual std::shared_ptr<Strt> get_struct() const = 0;
+
 	public:
-		StrM(Struct::MemT<T> & m) :
-			mem(m)
-		{
-			this->copy_tags(m);
-		}
+		StrM(Struct::MemT<T> & m) : mem(m) {}
 		virtual ~StrM() {}
 	};
+
+	// StrM with member function access
 	template <typename C, typename T>
 	class CStrM :
 		virtual public StrM<T>
 	{
 		C & cls;
-		Strt * (C::* ptr)() const;
+		std::shared_ptr<Strt> (C::* ptr)() const;
 
-		Strt * get_struct() const
+		std::shared_ptr<Strt> get_struct() const override
 		{
 			return (cls.* ptr)();
 		}
 	public:
-		CStrM(Struct::MemT<T> & m, C & c, Strt * (C::* p)() const) :
-			StrM<T>(m),
-			cls(c),
-			ptr(p)
+		CStrM(Struct::MemT<T> & m, C & c, std::shared_ptr<Strt> (C::* p)() const) :
+			StrM<T>(m), cls(c), ptr(p)
 		{}
 	};
-	// with Resolver
+
+	// With resolver and member function index
 	template <typename C, typename T>
 	class CStrMRes :
 		virtual public StrM<T>
 	{
 		C & cls;
 		size_t (C::* ptr)() const;
-		Res & res;
-		Strt * get_struct() const
+		std::shared_ptr<Res> res;
+		std::shared_ptr<Strt> get_struct() const override
 		{
-			return res.get((cls.* ptr)());
+			return res->get((cls.* ptr)());
 		}
 	public:
-		CStrMRes(Struct::MemT<T> & m, C & c, size_t (C::* p)() const, Res & r) :
-			StrM<T>(m),
-			cls(c),
-			ptr(p),
-			res(r)
+		CStrMRes(Struct::MemT<T> & m, C & c, size_t (C::* p)() const, std::shared_ptr<Res> r) :
+			StrM<T>(m), cls(c), ptr(p),	res(r)
 		{}
 	};
-	// with resolver and fixed index
+
+	// With resolver and dynamic index
 	template <typename T>
 	class IStrMRes :
 		virtual public StrM<T>
 	{
-		Res & res;
-		Index * idx;
-		Strt * get_struct() const
+		std::shared_ptr<Res> res;
+		std::shared_ptr<Index> idx;
+		std::shared_ptr<Strt> get_struct() const override
 		{
-			size_t i = idx ? idx->get() : 0;
-			return res.get(i);
+			return res->get(idx ? idx->get() : 0);
 		}
 	public:
-		IStrMRes(Struct::MemT<T> & m, Res & r, Index * i) :
-			StrM<T>(m),
-			res(r),
-			idx(i)
+		IStrMRes(Struct::MemT<T> & m, std::shared_ptr<Res> r, std::shared_ptr<Index> i) :
+			StrM<T>(m), res(r), idx(i)
 		{}
-		~IStrMRes()
-		{
-			delete idx;
-		}
+		~IStrMRes() {}
 	};
+
+	// Compound Array, combine arrays to make struct array
 	struct Compound :
 		virtual public Array
 	{
 		struct Entry
 		{
 			std::string name;
-			Array * elm;
+			std::shared_ptr<Array> elm;
 		};
+
 		std::vector<Entry> list;
 		~Compound();
-		Array & add_array(const std::string & name, Array * elm);
-		Struct & add_struct(Struct * elm);
+		Array & add_array(std::string const & name, std::shared_ptr<Array> elm);
+		Struct & add_struct(std::shared_ptr<Struct> elm); // have names already
+
+		// Add linear array
 		template <typename T>
-		ArrLin<T> & add_linear(const std::string & name, T * & arr_addr)
+		ArrLin<T> & add_linear(std::string const & name, T * & arr_addr)
 		{
-			ArrLin<T> * a = new ArrLin<T>(arr_addr);
+			auto a = std::make_shared<ArrLin<T>>(arr_addr);
 			add_array(name, a);
 			return * a;
 		}
-		TagSable * make_var(const std::string & name, Index * idx = 0);
-		const TagSable * make_var(const std::string & name, Index * idx = 0) const;
-		std::vector<const std::string *> get_names() const;
+
+		std::shared_ptr<Sable> make_var(std::string const & name, Index * idx = 0);
+		std::shared_ptr<Sable const> make_var(std::string const & name, Index * idx = 0) const;
+		std::vector<std::string> get_names() const;
 	};
 }
+
+/*
 template <typename T>
-prm::TagSable * prm::Arr<T>::make_var(Index * idx)
+std::shared_ptr<prm::Sable> prm::Arr<T>::make_var(std::shared_ptr<Index> idx)
 {
-	return new Idx<T>(* this, idx);
+	return std::make_shared<Idx<T>>(* this, idx);
 }
+*/
+
 template <typename T>
-prm::TagSable * prm::Struct::MemT<T>::make_var(Res & res, Index * idx)
+std::shared_ptr<prm::Sable> prm::Struct::MemT<T>::make_var(Res & res, Index * idx)
 {
-	return new IStrMRes<T>(* this, res, idx);
+	return std::make_shared<IStrMRes<T>>(* this, res, idx);
 }
+
 template <typename T>
-const prm::TagSable * prm::Struct::MemT<T>::make_var(Res & res, Index * idx) const
+std::shared_ptr<prm::Sable const> prm::Struct::MemT<T>::make_var(Res & res, Index * idx) const
 {
-	return new IStrMRes<T>(* const_cast<MemT<T> *>(this), res, idx);
+	return std::make_shared<IStrMRes<T>>(* const_cast<MemT<T> *>(this), res, idx);
 }
 #endif // PRM_HH

@@ -223,9 +223,9 @@ namespace { // no need to export all these implementation
 	class H5Arr<prm::Compound>
 	{
 		template <typename T>
-		bool push_type(const TagSable * v, std::vector<hid_t> & ts)
+		bool push_type(std::shared_ptr<Sable> v, std::vector<hid_t> & ts)
 		{
-			if (dynamic_cast<const prm::Var<T> *>(v)) {
+			if (std::dynamic_pointer_cast<prm::Var<T> const>(v)) {
 				es += sizeof(typename h5t<T>::Type);
 				ts.push_back(h5_nat<T>());
 				return true;
@@ -240,18 +240,18 @@ namespace { // no need to export all these implementation
 		H5Arr(const prm::Compound & c) :
 			es(0)
 		{
-			std::vector<const std::string *> ns = c.get_names();
+			auto ns = c.get_names();
 			std::vector<size_t> zs; // offsets
 			std::vector<hid_t> ts;  // H5 types
 			size_t nn = ns.size();
 			for (size_t i = 0; i < nn; i ++) {
 				zs.push_back(es);
-				std::unique_ptr<const TagSable> v(c.make_var(* ns[i]));
-				if (push_type<bool>(v.get(), ts)) continue;
-				if (push_type<int>(v.get(), ts)) continue;
-				if (push_type<unsigned>(v.get(), ts)) continue;
-				if (push_type<size_t>(v.get(), ts)) continue;
-				if (push_type<double>(v.get(), ts)) continue;
+				auto v = c.make_var(ns[i]);
+				if (push_type<bool>(v, ts)) continue;
+				if (push_type<int>(v, ts)) continue;
+				if (push_type<unsigned>(v, ts)) continue;
+				if (push_type<size_t>(v, ts)) continue;
+				if (push_type<double>(v, ts)) continue;
 			}
 			htype = H5Tcreate(H5T_COMPOUND, es);
 			for (size_t i = 0; i < nn; i ++) H5Tinsert(htype, ns[i]->c_str(), zs[i], ts[i]);
