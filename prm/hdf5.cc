@@ -165,7 +165,7 @@ namespace { // no need to export all these implementation
 		return true;
 	}
 
-	// buffer for array data type
+	// Buffer for array data type
 	template <typename A>
 	class H5Arr
 	{
@@ -179,13 +179,14 @@ namespace { // no need to export all these implementation
 		void * buf() {return bf;}
 	};
 
+	// Output buffer for array data type
 	template <typename A>
 	class H5oArr :
 		public H5Arr<A>
 	{
 		hid_t spc;
 	public:
-		H5oArr(const A & a)
+		H5oArr(A const & a)
 		{
 			hsize_t sz = a.get_size();
 			this->bf = new typename H5Arr<A>::HType [sz];
@@ -200,6 +201,7 @@ namespace { // no need to export all these implementation
 		hid_t space() {return spc;}
 	};
 
+	// Input buffer for array data type
 	template <typename A>
 	class H5iArr :
 		public H5Arr<A>
@@ -218,12 +220,13 @@ namespace { // no need to export all these implementation
 		}
 	};
 
-	// buffer for compounds
+	// Buffer for compounds
 	template <>
 	class H5Arr<prm::Compound>
 	{
+		// adding member type for constuction 
 		template <typename T>
-		bool push_type(std::shared_ptr<Sable> v, std::vector<hid_t> & ts)
+		bool push_type(std::shared_ptr<Sable const> v, std::vector<hid_t> & ts)
 		{
 			if (std::dynamic_pointer_cast<prm::Var<T> const>(v)) {
 				es += sizeof(typename h5t<T>::Type);
@@ -237,10 +240,10 @@ namespace { // no need to export all these implementation
 		hid_t htype;
 		size_t es; // element size
 	public:
-		H5Arr(const prm::Compound & c) :
+		H5Arr(prm::Compound const & c) :
 			es(0)
 		{
-			auto ns = c.get_names();
+			auto ns = c.get_names(); // all names in compound
 			std::vector<size_t> zs; // offsets
 			std::vector<hid_t> ts;  // H5 types
 			size_t nn = ns.size();
@@ -254,13 +257,14 @@ namespace { // no need to export all these implementation
 				if (push_type<double>(v, ts)) continue;
 			}
 			htype = H5Tcreate(H5T_COMPOUND, es);
-			for (size_t i = 0; i < nn; i ++) H5Tinsert(htype, ns[i]->c_str(), zs[i], ts[i]);
+			for (size_t i = 0; i < nn; i ++) H5Tinsert(htype, ns[i].c_str(), zs[i], ts[i]);
 		}
 		~H5Arr() {H5Tclose(htype);}
 		void * buf() {return bf;}
 		hid_t type() {return htype;}
 	};
 
+	// Output buffer for compound
 	template <>
 	class H5oArr<prm::Compound> :
 		public H5Arr<prm::Compound>
@@ -269,9 +273,9 @@ namespace { // no need to export all these implementation
 		hid_t spc;
 
 		template <typename T>
-		bool make_arr(const Array * elm, size_t & oft)
+		bool make_arr(std::shared_ptr<Array const> elm, size_t & oft)
 		{
-			if (const Arr<T> * a = dynamic_cast<const Arr<T> *>(elm)) {
+			if (auto a = std::dynamic_pointer_cast<Arr<T> const>(elm)) {
 				for (size_t n = 0; n < sz; n ++) {
 					typename h5t<T>::Type v = a->get(n);
 					memcpy(bf + oft + n * es, & v, sizeof(v));
@@ -283,9 +287,9 @@ namespace { // no need to export all these implementation
 		}
 
 		template <typename T>
-		bool make_mem(const Struct::Member * mem, Strt * * st, size_t & oft)
+		bool make_mem(std::shared_ptr<Struct::Member const> mem, std::shared_ptr<Strt> * st, size_t & oft)
 		{
-			if (const Struct::MemT<T> * m = dynamic_cast<const Struct::MemT<T> *>(mem)) {
+			if (auto m = std::dynamic_pointer_cast<Struct::MemT<T> const>(mem)) {
 				for (size_t n = 0; n < sz; n ++) {
 					typename h5t<T>::Type v = m->get(st[n]);
 					memcpy(bf + oft + n * es, & v, sizeof(v));
@@ -296,31 +300,30 @@ namespace { // no need to export all these implementation
 			return false;
 		}
 	public:
-		H5oArr(const prm::Compound & c) :
+		H5oArr(prm::Compound const & c) :
 			H5Arr<prm::Compound>(c)
 		{
 			sz = c.get_size();
 			bf = new char [es * sz];
 			// make buffer
 			size_t oft = 0;
-			for (std::vector<prm::Compound::Entry>::const_iterator i = c.list.begin(); i != c.list.end(); i ++) {
-				if (make_arr<bool>(i->elm, oft)) continue;
-				if (make_arr<int>(i->elm, oft)) continue;
-				if (make_arr<unsigned>(i->elm, oft)) continue;
-				if (make_arr<size_t>(i->elm, oft)) continue;
-				if (make_arr<double>(i->elm, oft)) continue;
-				if (const Struct * s = dynamic_cast<const Struct *>(i->elm)) {
-					Strt * * st = new Strt * [sz];
+			for (auto i: c.list) {
+				if (make_arr<bool>(i.elm, oft)) continue;
+				if (make_arr<int>(i.elm, oft)) continue;
+				if (make_arr<unsigned>(i.elm, oft)) continue;
+				if (make_arr<size_t>(i.elm, oft)) continue;
+				if (make_arr<double>(i.elm, oft)) continue;
+				if (auto s = std::dynamic_pointer_cast<Struct const>(i.elm)) {
+					std::shared_ptr<Strt> * st = new std::shared_ptr<Strt> [sz];
 					for (size_t n = 0; n < sz; n ++) st[n] = s->res->get(n);
-					for (std::vector<Struct::Entry>::const_iterator j = s->list.begin(); j != s->list.end(); j ++) {
-						if (make_mem<bool>(j->mem, st, oft)) continue;
-						if (make_mem<int>(j->mem, st, oft)) continue;
-						if (make_mem<unsigned>(j->mem, st, oft)) continue;
-						if (make_mem<size_t>(j->mem, st, oft)) continue;
-						if (make_mem<double>(j->mem, st, oft)) continue;
+					for (auto & j: s->list) {
+						if (make_mem<bool>(j.mem, st, oft)) continue;
+						if (make_mem<int>(j.mem, st, oft)) continue;
+						if (make_mem<unsigned>(j.mem, st, oft)) continue;
+						if (make_mem<size_t>(j.mem, st, oft)) continue;
+						if (make_mem<double>(j.mem, st, oft)) continue;
 						throw TypeUnknownError("member of a struct");
 					}
-					for (size_t n = 0; n < sz; n ++) delete st[n];
 					delete [] st;
 					continue;
 				}
@@ -344,9 +347,9 @@ namespace { // no need to export all these implementation
 		prm::Compound & c;
 		size_t sz;
 		template <typename T>
-		bool read_arr(Array * arr, size_t & oft)
+		bool read_arr(std::shared_ptr<Array> arr, size_t & oft)
 		{
-			if (Arr<T> * a = dynamic_cast<Arr<T> *>(arr)) {
+			if (auto a = std::dynamic_pointer_cast<Arr<T>>(arr)) {
 				for (size_t n = 0; n < sz; n ++) {
 					typename h5t<T>::Type v;
 					memcpy(& v, bf + oft + n * es, sizeof(v));
@@ -358,9 +361,9 @@ namespace { // no need to export all these implementation
 			return false;
 		}
 		template <typename T>
-		bool read_mem(Struct::Member * mem, Strt * * st, size_t & oft)
+		bool read_mem(std::shared_ptr<Struct::Member> mem, std::shared_ptr<Strt> * st, size_t & oft)
 		{
-			if (Struct::MemT<T> * m = dynamic_cast<Struct::MemT<T> *>(mem)) {
+			if (auto m = std::dynamic_pointer_cast<Struct::MemT<T>>(mem)) {
 				for (size_t n = 0; n < sz; n ++) {
 					typename h5t<T>::Type v;
 					memcpy(& v, bf + oft + n * es, sizeof(v));
@@ -387,24 +390,23 @@ namespace { // no need to export all these implementation
 			assert(c.get_size() == sz);
 			if (! sz) return;
 			size_t oft = 0;
-			for (std::vector<prm::Compound::Entry>::iterator i = c.list.begin(); i != c.list.end(); i ++) {
-				if (read_arr<bool>(i->elm, oft)) continue;
-				if (read_arr<int>(i->elm, oft)) continue;
-				if (read_arr<unsigned>(i->elm, oft)) continue;
-				if (read_arr<size_t>(i->elm, oft)) continue;
-				if (read_arr<double>(i->elm, oft)) continue;
-				if (Struct * s = dynamic_cast<Struct *>(i->elm)) {
-					Strt * * st = new Strt * [sz];
+			for (auto & i: c.list) {
+				if (read_arr<bool>(i.elm, oft)) continue;
+				if (read_arr<int>(i.elm, oft)) continue;
+				if (read_arr<unsigned>(i.elm, oft)) continue;
+				if (read_arr<size_t>(i.elm, oft)) continue;
+				if (read_arr<double>(i.elm, oft)) continue;
+				if (auto s = std::dynamic_pointer_cast<Struct>(i.elm)) {
+					std::shared_ptr<Strt> * st = new std::shared_ptr<Strt> [sz];
 					for (size_t n = 0; n < sz; n ++) st[n] = s->res->get(n);
-					for (std::vector<Struct::Entry>::iterator j = s->list.begin(); j != s->list.end(); j ++) {
-						if (read_mem<bool>(j->mem, st, oft)) continue;
-						if (read_mem<int>(j->mem, st, oft)) continue;
-						if (read_mem<unsigned>(j->mem, st, oft)) continue;
-						if (read_mem<size_t>(j->mem, st, oft)) continue;
-						if (read_mem<double>(j->mem, st, oft)) continue;
+					for (auto & j: s->list) {
+						if (read_mem<bool>(j.mem, st, oft)) continue;
+						if (read_mem<int>(j.mem, st, oft)) continue;
+						if (read_mem<unsigned>(j.mem, st, oft)) continue;
+						if (read_mem<size_t>(j.mem, st, oft)) continue;
+						if (read_mem<double>(j.mem, st, oft)) continue;
 						throw TypeUnknownError("member of a struct");
 					}
-					for (size_t n = 0; n < sz; n ++) delete st[n];
 					delete [] st;
 					continue;
 				}

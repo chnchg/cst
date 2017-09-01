@@ -280,7 +280,7 @@ void Parser::add_help(const string & msg)
 	help_list.push_back(hl);
 }
 
-Option & Parser::add_opt(int key, const string & name, bool hide)
+Option & Parser::add_opt(int key, string const & name, bool hide)
 {
 	Option * o = new Option(key, name);
 	opt_list.push_back(o);

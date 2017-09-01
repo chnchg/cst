@@ -34,6 +34,11 @@ void Taggable::copy_tags(const Taggable & tgb)
 	}
 }
 
+Taggable::Taggable(Taggable const & t)
+{
+	copy_tags(t);
+}
+
 Taggable::~Taggable()
 {
 	while (tag_list.size()) {
@@ -51,7 +56,7 @@ Taggable & Param::add_var(std::string const & name, std::shared_ptr<Sable> v)
 		std::cerr << "Duplicate var!\n";
 		abort();
 	}
-	vars.push_back(VarEntry(name, v));
+	vars.emplace_back(name, v);
 	return vars.back().tags;
 }
 
@@ -121,7 +126,7 @@ void Param::copy(Param const & p)
 
 void Param::append(Param const & p)
 {
-	for (auto v: p.vars) vars.push_back(v);
+	for (auto & v: p.vars) vars.push_back(v);
 }
 
 Struct::Struct() : res(0) {}
@@ -155,40 +160,46 @@ std::vector<std::string> Struct::get_names() const
 // prm::Compound
 Compound::~Compound() {}
 
-Array & Compound::add_array(const std::string & name, std::shared_ptr<Array> elm)
+ArrayS & Compound::add_arrays(const std::string & name, std::shared_ptr<ArrayS> elm)
 {
 	list.push_back(Entry{name, elm});
-	return * list.back().elm;
+	return * elm;
 }
 
 Struct & Compound::add_struct(std::shared_ptr<Struct> elm)
 {
-	add_array("", elm);
+	list.push_back(Entry{"", elm});
 	return * elm;
 }
 
-std::shared_ptr<Sable> Compound::make_var(const std::string & name, Index * idx)
+std::shared_ptr<Sable> Compound::make_var(const std::string & name, std::shared_ptr<Index> idx)
 {
 	for (auto & i: list) {
 		if (auto s = std::dynamic_pointer_cast<Struct>(i.elm)) {
 			if (auto m = s->find_member(name)) {
-				return m->mem->make_var(* s->res, idx);
+				return m->mem->make_var(s->res, idx);
 			}
 		}
-		else if (i.name == name) return i.elm->make_var(idx);
+		else if (i.name == name) {
+			if (auto a = std::dynamic_pointer_cast<ArrayS>(i.elm)) return a->make_var(idx);
+			return 0; // don't need to look further
+		}
 	}
 	return 0;
 }
 
-std::shared_ptr<Sable const> Compound::make_var(std::string const & name, Index * idx) const
+std::shared_ptr<Sable const> Compound::make_var(std::string const & name, std::shared_ptr<Index> idx) const
 {
 	for (auto i: list) {
 		if (auto s = std::dynamic_pointer_cast<Struct const>(i.elm)) {
 			if (auto m = s->find_member(name)) {
-				return m->mem->make_var(* s->res, idx);
+				return m->mem->make_var(s->res, idx);
 			}
 		}
-		else if (i.name == name) return i.elm->make_var(idx);
+		else if (i.name == name) {
+			if (auto a = std::dynamic_pointer_cast<ArrayS>(i.elm)) return a->make_var(idx);
+			return 0; // don't need to look further
+		}
 	}
 	return 0;
 }

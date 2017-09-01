@@ -3394,9 +3394,10 @@ void TextDraw::draw_text(Align xl, Align yl, int wlimit)
 	}
 	switch (yl) {
 	case ALIGN_CENTER:
-		y -= glut_get_font_height(font) / 2;
+		y = - glut_get_font_height(font) / 2;
+		break;
 	case ALIGN_START:
-		y += glut_get_font_ascent(font);
+		y = glut_get_font_ascent(font);
 		break;
 	case ALIGN_END:
 		y = - glut_get_font_descent(font);
