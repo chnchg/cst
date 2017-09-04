@@ -27,6 +27,7 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <sstream>
 #include <memory>
+#include <algorithm>
 #if __cplusplus < 201103L
 #define override
 #define final
@@ -121,12 +122,15 @@ namespace prm {
 		template <typename TG>
 		const TG * find() const
 		{
-			const TG * t = 0;
-			for (std::vector<tag::Base *>::const_iterator i = tag_list.begin(); i != tag_list.end(); i ++) {
-				t = dynamic_cast<const TG *>(* i);
-				if (t) break;
-			}
-			return t;
+			for (auto i: tag_list) if (auto t = dynamic_cast<const TG *>(i)) return t;
+			return 0;
+		}
+		template <typename TG>
+		void drop()
+		{
+			tag_list.erase(std::remove_if(tag_list.begin(), tag_list.end(), [](tag::Base * x){
+				return dynamic_cast<TG *>(x);
+			}), tag_list.end());
 		}
 	};
 
@@ -608,7 +612,7 @@ namespace prm {
 		void read(std::istream & input);
 		void write(std::ostream & output) const;
 		// copy values from another Param
-		void copy(Param const & p);
+		void copy_val(Param const & p);
 		// merge in another Param
 		void append(Param const & p);
 	};

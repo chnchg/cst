@@ -92,12 +92,12 @@ void Runner::set_parser()
 		.once(RT_NONE)
 		.help("initailize data file");
 	parser.add_opt('R', "run")
-		.store(new arg::RelValue(run_count, run_relative))
+		.store(std::make_shared<arg::RelValue>(run_count, run_relative))
 		.set(& run_type, RT_DASH)
 		.once(RT_NONE)
 		.help("run until count=VALUE or count+VALUE", "[+]VALUE")
 		.show_default();
-	arg::TermValue * tv = new arg::TermValue(dump_type);
+	auto tv = std::make_shared<arg::TermValue>(dump_type);
 	for (auto const & e: dump_set) {
 		if (e.first == "help") tv->add_help(e.second);
 		else tv->add(e.first, e.second);

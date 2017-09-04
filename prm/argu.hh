@@ -107,7 +107,7 @@ namespace prm {
 		void add(Param & p);
 		void clear(); // clear argus
 		// Use
-		arg::SubParser * make_parser(std::string title = "");
+		std::shared_ptr<arg::SubParser> make_parser(std::string title = "");
 		void addto_parser(arg::Parser & parser);
 		bool alter();
 		// Info
