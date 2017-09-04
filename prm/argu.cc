@@ -105,9 +105,9 @@ void Argu::clear()
 	argus.clear();
 }
 
-arg::SubParser * Argu::make_parser(std::string title)
+std::shared_ptr<arg::SubParser> Argu::make_parser(std::string title)
 {
-	arg::SubParser * sp = new arg::SubParser;
+	auto sp = std::make_shared<arg::SubParser>();
 	if (title.size()) sp->add_help(title + '\n');
 	sp->add_help("Available parameters:");
 	sp->add_help("");

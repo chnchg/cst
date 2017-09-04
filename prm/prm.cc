@@ -29,9 +29,7 @@ void Taggable::copy_tags(const Taggable & tgb)
 		delete tag_list.back();
 		tag_list.pop_back();
 	}
-	for (std::vector<tag::Base *>::const_iterator i = tgb.tag_list.begin(); i != tgb.tag_list.end(); i ++) {
-		tag_list.push_back((* i)->dup());
-	}
+	for (auto i: tgb.tag_list) tag_list.push_back(i->dup());
 }
 
 Taggable::Taggable(Taggable const & t)
@@ -83,12 +81,12 @@ std::shared_ptr<Sable> Param::get_var(std::string const & name)
 
 void Param::delete_var(const std::string & name)
 {
-	for (auto i = vars.begin(); i != vars.end(); i ++) if (i->name == name) {
-		vars.erase(i);
-		return;
+	auto i = std::find_if(vars.begin(), vars.end(), [&](VarEntry & e){return e.name == name;});
+	if (i != vars.end()) vars.erase(i);
+	else {
+		std::cerr << "Unknown var!\n";
+		throw;
 	}
-	std::cerr << "Unknown var!\n";
-	throw;
 }
 
 void Param::read(std::istream & input)
@@ -119,7 +117,7 @@ void Param::write(std::ostream & output) const
 	}
 }
 
-void Param::copy(Param const & p)
+void Param::copy_val(Param const & p)
 {
 	for (auto & i: vars) for (auto & j: p.vars) if (i.name == j.name) i.var->copy_val(* j.var);
 }
