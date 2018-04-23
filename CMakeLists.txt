@@ -18,6 +18,7 @@ if(HDF5_FOUND)
 	set(CST_SRC ${CST_SRC}
 		prm/hdf5.cc prm/hdf5.hh sim/h5_file.cc sim/h5_file.hh
 	)
+	add_definitions(-DHAVE_HDF5)
 endif()
 if(GLUT_FOUND)
 	set(MYINC ${MYINC} ${GLUT_INCLUDE_DIR})
