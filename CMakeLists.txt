@@ -12,18 +12,20 @@ set(CST_SRC
         sim/ivec.cc sim/ivec.hh
         sim/mt19937.cc sim/mt19937.hh sim/parser_add.hh
 )
+set(MYINC .)
 if(HDF5_FOUND)
-	include_directories(${HDF5_INCLUDE_DIRS})
+	set(MYINC ${MYINC} ${HDF5_INCLUDE_DIRS})
 	set(CST_SRC ${CST_SRC}
 		prm/hdf5.cc prm/hdf5.hh sim/h5_file.cc sim/h5_file.hh
 	)
 endif()
 if(GLUT_FOUND)
-	include_directories(${GLUT_INCLUDE_DIR})
+	set(MYINC ${MYINC} ${GLUT_INCLUDE_DIR})
 	set(CST_SRC ${CST_SRC}
 	        gltk.cc gltk.hh prm/gui.cc prm/gui.hh
 	        sim/gkwin.cc sim/gkwin.hh sim/gkview.cc sim/gkview.hh
 	        sim/gkviewt.cc sim/gkviewt.hh
 	)
 endif()
+include_directories(${MYINC})
 add_library(cst ${CST_SRC})
