@@ -198,7 +198,7 @@ public:
 	virtual ~Avera();
 
 	void init();
-	void step(double increment);
+	void step(double increment = 1.0);
 #ifdef HAVE_HDF5
 	void h5_save(hid_t group, const std::string & name = std::string()) const;
 	void h5_load(hid_t group, const std::string & name = std::string());
