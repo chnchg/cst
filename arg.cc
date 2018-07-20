@@ -1,6 +1,6 @@
 /* arg.cc
  *
- * Copyright (C) 2010,2017 Chun-Chung Chen <cjj@u.washington.edu>
+ * Copyright (C) 2010,2018 Chun-Chung Chen <cjj@u.washington.edu>
  * 
  * This file is part of arg.
  * 
@@ -277,7 +277,7 @@ Option & Parser::add_opt(const string & name, bool hide)
 	return add_opt(0, name, hide);
 }
 
-Option & Parser::replace_opt(std::string const & name)
+Option & Parser::get_opt(std::string const & name)
 {
 	for (auto & i: opt_list) if (i->get_name() == name) return * i;
 	return add_opt(0, name);
