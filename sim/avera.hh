@@ -69,11 +69,11 @@ private:
 	public:
 		AccDouble(double & summation, const std::string & name) :
 			Accumu(name), sum(summation) {}
-		void clear() {rec.clear(); sum = 0;}
-		void push_rec() {rec.push_back(sum);}
+		void clear() override {rec.clear(); sum = 0;}
+		void push_rec() override {rec.push_back(sum);}
 #ifdef HAVE_HDF5
-		void h5_save(hid_t group) const;
-		void h5_load(hid_t group);
+		void h5_save(hid_t group) const override;
+		void h5_load(hid_t group) override;
 #endif
 		void compact(size_t keep) override
 		{
@@ -95,11 +95,11 @@ private:
 	public:
 		AccFVec(FVec & summation, const std::string & name) :
 			Accumu(name), sum(summation) {}
-		void clear() {rec.clear(); sum.clear();}
-		void push_rec() {rec.push_back(sum);}
+		void clear() override {rec.clear(); sum.clear();}
+		void push_rec() override {rec.push_back(sum);}
 #ifdef HAVE_HDF5
-		void h5_save(hid_t group) const;
-		void h5_load(hid_t group);
+		void h5_save(hid_t group) const override;
+		void h5_load(hid_t group) override;
 #endif
 		void compact(size_t keep) override
 		{
@@ -121,11 +121,11 @@ private:
 	public:
 		AccVVec(VVec & summation, const std::string & name) :
 			Accumu(name), sum(summation) {}
-		void clear() {rec.clear(); sum.clear();}
-		void push_rec() {rec.push_back(sum);}
+		void clear() override {rec.clear(); sum.clear();}
+		void push_rec() override {rec.push_back(sum);}
 #ifdef HAVE_HDF5
-		void h5_save(hid_t group) const;
-		void h5_load(hid_t group);
+		void h5_save(hid_t group) const override;
+		void h5_load(hid_t group) override;
 #endif
 		void compact(size_t keep) override
 		{
@@ -147,11 +147,11 @@ private:
 	public:
 		AccIVec(IVec & summation, const std::string & name) :
 			Accumu(name), sum(summation) {}
-		void clear() {rec.clear(); sum.clear();}
-		void push_rec() {rec.push_back(sum);}
+		void clear() override {rec.clear(); sum.clear();}
+		void push_rec() override {rec.push_back(sum);}
 #ifdef HAVE_HDF5
-		void h5_save(hid_t group) const;
-		void h5_load(hid_t group);
+		void h5_save(hid_t group) const override;
+		void h5_load(hid_t group) override;
 #endif
 		void compact(size_t keep) override
 		{

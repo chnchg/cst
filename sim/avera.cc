@@ -74,7 +74,7 @@ void Avera::AccFVec::h5_save(hid_t group) const
 	hid_t space = H5Screate(H5S_SCALAR);
 	hid_t type = sum.h5_type();
 	hid_t data = H5Dcreate(group, n.c_str(), type, space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	FVec::H5Data * buf = sum.h5_buff();
+	auto buf = sum.h5_buff();
 	sum.h5_make(buf);
 	H5Dwrite(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 	H5Dclose(data);
@@ -101,7 +101,7 @@ void Avera::AccFVec::h5_load(hid_t group)
 	hid_t data = H5Dopen(group, n.c_str(), H5P_DEFAULT);
 	hid_t space = H5Dget_space(data); // `space' should be scalar
 	hid_t type = sum.h5_type();
-	FVec::H5Data * buf = sum.h5_buff();
+	auto buf = sum.h5_buff();
 	H5Dread(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 	sum.h5_read(buf);
 	H5Dclose(data);
@@ -135,7 +135,7 @@ void Avera::AccVVec::h5_save(hid_t group) const
 	hid_t space = H5Screate(H5S_SCALAR);
 	hid_t type = VVec::h5_type();
 	hid_t data = H5Dcreate(group, n.c_str(), type, space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	VVec::H5Data * buf = new VVec::H5Data;
+	auto buf = new VVec::H5Data;
 	sum.h5_make(buf);
 	H5Dwrite(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 	H5Dclose(data);
@@ -145,7 +145,7 @@ void Avera::AccVVec::h5_save(hid_t group) const
 		n = "rec_" + id;
 		hsize_t len = rec.size();
 		space = H5Screate_simple(1, & len, 0);
-		buf = new VVec::H5Data[len];
+		auto buf = new VVec::H5Data[len];
 		for (size_t i = 0; i < len; i ++) rec[i].h5_make(buf + i);
 		data = H5Dcreate(group, n.c_str(), type, space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		H5Dwrite(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
@@ -162,7 +162,7 @@ void Avera::AccVVec::h5_load(hid_t group)
 	hid_t data = H5Dopen(group, n.c_str(), H5P_DEFAULT);
 	hid_t space = H5Dget_space(data); // `space' should be scalar
 	hid_t type = VVec::h5_type();
-	VVec::H5Data * buf = new VVec::H5Data;
+	auto buf = new VVec::H5Data;
 	H5Dread(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 	sum.h5_read(buf);
 	H5Dvlen_reclaim(type, space, H5P_DEFAULT, buf);
@@ -176,7 +176,7 @@ void Avera::AccVVec::h5_load(hid_t group)
 		space = H5Dget_space(data);
 		hsize_t len;
 		H5Sget_simple_extent_dims(space, & len, 0);
-		buf = new VVec::H5Data[len];
+		auto buf = new VVec::H5Data[len];
 		H5Dread(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 		for (size_t i = 0; i < len; i ++) {
 			VVec v;
@@ -197,7 +197,7 @@ void Avera::AccIVec::h5_save(hid_t group) const
 	hid_t space = H5Screate(H5S_SCALAR);
 	hid_t type = IVec::h5_type();
 	hid_t data = H5Dcreate(group, n.c_str(), type, space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	IVec::H5Data * buf = new IVec::H5Data;
+	auto buf = new IVec::H5Data;
 	sum.h5_make(buf);
 	H5Dwrite(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 	H5Dclose(data);
@@ -207,7 +207,7 @@ void Avera::AccIVec::h5_save(hid_t group) const
 		n = "rec_" + id;
 		hsize_t len = rec.size();
 		space = H5Screate_simple(1, & len, 0);
-		buf = new IVec::H5Data[len];
+		auto buf = new IVec::H5Data[len];
 		for (size_t i = 0; i < len; i ++) rec[i].h5_make(buf + i);
 		data = H5Dcreate(group, n.c_str(), type, space, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 		H5Dwrite(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
@@ -224,7 +224,7 @@ void Avera::AccIVec::h5_load(hid_t group)
 	hid_t data = H5Dopen(group, n.c_str(), H5P_DEFAULT);
 	hid_t space = H5Dget_space(data); // `space' should be scalar
 	hid_t type = IVec::h5_type();
-	IVec::H5Data * buf = new IVec::H5Data;
+	auto buf = new IVec::H5Data;
 	H5Dread(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 	sum.h5_read(buf);
 	H5Dvlen_reclaim(type, space, H5P_DEFAULT, buf);
@@ -239,7 +239,7 @@ void Avera::AccIVec::h5_load(hid_t group)
 		space = H5Dget_space(data);
 		hsize_t len;
 		H5Sget_simple_extent_dims(space, & len, 0);
-		buf = new IVec::H5Data[len];
+		auto buf = new IVec::H5Data[len];
 		H5Dread(data, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 		for (size_t i = 0; i < len; i ++) {
 			IVec v;
