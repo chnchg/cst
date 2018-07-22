@@ -1,5 +1,5 @@
 /* prm/argu.cc
-Copyright (C) 2016 Chun-Chung Chen <cjj@u.washington.edu>
+Copyright (C) 2016,2018 Chun-Chung Chen <cjj@u.washington.edu>
 
 This file is part of cst.
 
@@ -77,6 +77,51 @@ template <> std::string argu::type_word<int>() {return "INT";}
 template <> std::string argu::type_word<unsigned>() {return "UINT";}
 template <> std::string argu::type_word<size_t>() {return "SIZE";}
 template <> std::string argu::type_word<double>() {return "DOUBLE";}
+template <> std::string argu::type_word<std::string>() {return "STRING";}
+
+namespace {
+	bool sable_callback(int, std::string const & str, void * data)
+	{
+		argu::Sab * s = static_cast<argu::Sab *>(data);
+		return s->parse(str);
+	}
+}
+
+void argu::Sab::addto_option(arg::Option & opt)
+{
+	dft = sb->to_str();
+	opt.stow(dft);
+	opt.call(& sable_callback, this);
+	if (auto w = tags.find<tag::Word>()) opt.help_word(w->text);
+	else opt.help_word("DATA");
+}
+
+void argu::Sab::do_altering()
+{
+	sb->read_str(altering);
+}
+
+argu::Sab::Sab(Param::VarEntry const & v) :
+	Base(v),
+	sb(v.var)
+{
+	if (! sb) throw;
+	altering = sb->to_str();
+}
+
+bool argu::Sab::parse(std::string const & str)
+{
+	if (sb->test_str(str)) {
+		altering = str;
+		return true;
+	}
+	return false;
+}
+
+std::shared_ptr<argu::Sab> argu::Sab::make(Param::VarEntry const & v)
+{
+	return std::make_shared<Sab>(v);
+}
 
 Argu::~Argu()
 {
@@ -95,7 +140,7 @@ void Argu::add(Param & p)
 		else if (auto c = argu::Arg<size_t>::make(i)) argus.push_back(c);
 		else if (auto c = argu::Arg<double>::make(i)) argus.push_back(c);
 		else if (auto c = argu::Arg<std::string>::make(i)) argus.push_back(c);
-		else std::cerr << "can not make command-line for " << i.name << '\n';
+		else argus.push_back(argu::Sab::make(i));
 	}
 }
 

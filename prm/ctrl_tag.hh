@@ -16,8 +16,8 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with cst.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CTRL_TAG_HH
-#define CTRL_TAG_HH 1
+/* TODO: switch NameSet to Term support */
+#pragma once
 #include "prm.hh"
 #include "name_set.hh"
 namespace prm {
@@ -48,4 +48,3 @@ namespace prm {
 		};
 	}
 }
-#endif // CTRL_TAG_HH

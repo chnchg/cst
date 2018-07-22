@@ -19,8 +19,7 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
 /*
  *  A mapping between keys and names with some descriptions
  */
-#ifndef NAME_SET_HH
-#define NAME_SET_HH
+#pragma once
 #include <val.hh>
 #include <string>
 #include <vector>
@@ -111,4 +110,3 @@ public:
 		return sv;
 	}
 };
-#endif // NAME_SET_HH

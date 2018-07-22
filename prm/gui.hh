@@ -16,8 +16,8 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with cst.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef PRM_GUI_HH
-#define PRM_GUI_HH
+/* TODO: switch NameSet to Term support */
+#pragma once
 #include "name_set.hh"
 #include <prm/prm.hh>
 #include <gltk.hh>
@@ -159,4 +159,3 @@ namespace prm {
 		static gui::Base * make_ctrl(Param::VarEntry & e);
 	};
 }
-#endif

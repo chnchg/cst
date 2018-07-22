@@ -18,7 +18,6 @@
  * License along with arg.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-
 #include "arg.hh"
 #include <iostream>
 #include <algorithm>
@@ -57,7 +56,7 @@ Option::~Option() {}
 
 Option & Option::store(std::shared_ptr<Value> ptr)
 {
-	if (! ptr) ptr = std::make_shared<Value>(); // null storage
+	if (!ptr) ptr = std::make_shared<Value>(); // null storage
 	store_ptr = ptr;
 	return * this;
 }
@@ -183,35 +182,37 @@ string Option::get_help(HelpFormat format)
 void Option::process()
 {
 	if (store_ptr) {
-		if (! store_optional) throw OptError(name, "missing value");
-		store_ptr->set(store_str);
+		if (!store_optional) throw OptError(name, "missing value");
+		store_ptr->set(store_str); // use default value
 	}
-	if (set_bool) {
-		* set_bool = bool_value;
-	}
+	if (set_bool) *set_bool = bool_value;
 	if (set_var) {
-		if (set_once && set_init != * set_var) throw OptError(name, "can not re-set");
-		* set_var = set_value;
+		if (set_once && set_init != *set_var) throw OptError(name, "can not re-set");
+		*set_var = set_value;
 	}
-	if (call_func) {
-		if (! (* call_func)(key, "", call_data)) throw OptError(name, "callback error");
-	}
+	if (call_func) if (!(*call_func)(key, "", call_data)) throw OptError(name, "callback error");
 }
 
 void Option::process(const string & str)
 {
-	if (! store_ptr) throw OptError(name, "unwanted value '" + str + "'");
-	store_ptr->set(str);
-	if (set_bool) {
-		* set_bool = bool_value;
+	bool caught = false;
+	if (store_ptr) {
+		try {
+			store_ptr->set(str);
+			caught = true;
+		}
+		catch (OptError e) {}
 	}
+	if (set_bool) *set_bool = bool_value;
 	if (set_var) {
-		if (set_once && set_init != * set_var) throw OptError(name, "can not re-set");
-		* set_var = set_value;
+		if (set_once && set_init != *set_var) throw OptError(name, "can not re-set");
+		*set_var = set_value;
 	}
 	if (call_func) {
-		if (! (* call_func)(key, str, call_data)) throw OptError(name, "callback error");
+		if (!(*call_func)(key, str, call_data)) throw OptError(name, "callback error");
+		else caught = true;
 	}
+	if (!caught) throw OptError(name, "unwanted value '" + str + "'");
 }
 
 Argument::Argument(const string & name) :
@@ -435,7 +436,7 @@ string Parser::get_help()
 }
 
 namespace { // local callback functions
-	bool help_callback(int, const string &, void * data)
+	bool help_callback(int, string const &, void * data)
 	{
 		Parser * p = static_cast<Parser *>(data);
 		cout << p->get_header();
@@ -445,7 +446,7 @@ namespace { // local callback functions
 		exit(0);
 	}
 
-	bool version_callback(int, const string &, void * data)
+	bool version_callback(int, string const &, void * data)
 	{
 		string * s = static_cast<string *>(data);
 		cout << * s << '\n';

@@ -1,5 +1,5 @@
 /* prm/argu.hh
-Copyright (C) 2016 Chun-Chung Chen <cjj@u.washington.edu>
+Copyright (C) 2016,2018 Chun-Chung Chen <cjj@u.washington.edu>
 
 This file is part of cst.
 
@@ -18,13 +18,11 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
   Generate command line argument from Param
-  TODO: NameSet support
 
   The command-line values parsed by Argu do not affect the parameters right away.
   To commit the values to actual parameters, you need to call "alter()";
 */
-#ifndef ARGU_HH
-#define ARGU_HH 1
+#pragma once
 #include "prm.hh"
 #include <arg.hh>
 namespace prm {
@@ -40,16 +38,17 @@ namespace prm {
 	}
 
 	namespace argu {
+		///Argument base class
 		class Base
 		{
 		protected:
-			std::string name;
-			Taggable tags;
-			int set_altering;
-			virtual void addto_option(arg::Option & opt) = 0;
-			virtual void do_altering() = 0;
-			virtual std::shared_ptr<Sable> get_var() = 0;
-			virtual std::shared_ptr<Sable const> get_var() const = 0;
+			std::string name; ///<Name of the argument
+			Taggable tags; ///<Tags for the argument
+			int set_altering; ///<The argument is provided in parsing
+			virtual void addto_option(arg::Option & opt) = 0; ///<Add properties to an Option
+			virtual void do_altering() = 0; ///<Actually alter the target variable
+			virtual std::shared_ptr<Sable> get_var() = 0; ///<Get variable as a Sable
+			virtual std::shared_ptr<Sable const> get_var() const = 0; ///<Get variable as const Sable
 		public:
 			Base(Param::VarEntry const & v);
 			virtual ~Base() {}
@@ -66,6 +65,24 @@ namespace prm {
 		template <> std::string type_word<unsigned>();
 		template <> std::string type_word<size_t>();
 		template <> std::string type_word<double>();
+		template <> std::string type_word<std::string>();
+
+		///Argument for a Sable
+		class Sab :
+			virtual public Base
+		{
+			std::shared_ptr<Sable> sb;
+			std::string altering;
+			void addto_option(arg::Option & opt) override;
+			void do_altering() override;
+			std::shared_ptr<Sable> get_var() override {return sb;}
+			std::shared_ptr<Sable const> get_var() const override {return sb;}
+			std::string dft; ///<Default value and storage
+		public:
+			Sab(Param::VarEntry const & v);
+			bool parse(std::string const & str);
+			static std::shared_ptr<Sab> make(Param::VarEntry const & v);
+		};
 
 		template <typename Type>
 		class Arg :
@@ -114,4 +131,3 @@ namespace prm {
 		size_t size() const;
 	};
 }
-#endif // ARGU_HH

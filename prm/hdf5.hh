@@ -16,8 +16,7 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with cst.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef HDF5_HH
-#define HDF5_HH 1
+#pragma once
 #include "prm.hh"
 extern "C" {
 #include <hdf5.h>
@@ -54,4 +53,3 @@ namespace prm {
 	void h5_save(hid_t g, const Array & a, const std::string & n);
 	bool h5_load(hid_t g, Array & a, const std::string & n);
 }
-#endif // HDF5_HH

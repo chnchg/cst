@@ -18,7 +18,6 @@
  * License along with arg.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-
 #pragma once
 #include <vector>
 #include <string>

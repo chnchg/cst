@@ -1,5 +1,5 @@
 /* prm/prm.hh
-Copyright (C) 2016 Chun-Chung Chen <cjj@u.washington.edu>
+Copyright (C) 2016,2018 Chun-Chung Chen <cjj@u.washington.edu>
 
 This file is part of cst.
 
@@ -21,8 +21,7 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
  *
  *    Var/Parameter should be tagged.
  */
-#ifndef PRM_HH
-#define PRM_HH 1
+#pragma once
 #include <vector>
 #include <string>
 #include <sstream>
@@ -141,8 +140,8 @@ namespace prm {
 		virtual ~Sable() {}
 		virtual std::string to_str() const {return "";} // convert to string
 		virtual std::string a_str() const {return "";}  // a default string
-		virtual bool read_str(const std::string & s) {return s == "";} // convert from string
-		virtual bool test_str(const std::string & s) const {return s == "";} // check string
+		virtual bool read_str(std::string const & s) {return s == "";} // convert from string
+		virtual bool test_str(std::string const & s) const {return s == "";} // check string
 		virtual void copy_val(Sable const & s) {read_str(s.to_str());} // copy value
 	};
 
@@ -834,4 +833,3 @@ std::shared_ptr<prm::Sable const> prm::Struct::MemT<T>::make_var(std::shared_ptr
 {
 	return std::make_shared<IStrMRes<T>>(* const_cast<MemT<T> *>(this), res, idx);
 }
-#endif // PRM_HH

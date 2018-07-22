@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.4)
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -Wall -Wextra -Werror")
 find_package(HDF5 COMPONENTS C)
 set(CST_SRC
         sigc.hh arg.cc arg.hh val.cc val.hh s_entry.hh
         prm/prm.cc prm/prm.hh prm/ctrl_tag.hh prm/argu.cc prm/argu.hh
+	prm/term.cc prm/term.hh
         prm/name_set.hh
         sim/random.hh sim/executable.hh sim/runnable.hh sim/with_param.hh
         sim/runner.cc sim/runner.hh

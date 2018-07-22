@@ -20,40 +20,23 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
  *  A term with description
  */
 #pragma once
-#include <val.hh>
+#include <prm/prm.hh>
 #include <string>
 #include <map>
+
 class Term
 {
-	std::vector<std::string, std::string> descs;
+	std::string title;
+	std::map<std::string, std::string> descs;
+	bool do_help;
 public:
-	void add(const std::string & term, std::string const & desc = "")
-	{
-		descs[term] = desc;
-	}
+	Term();
+	void set_title(std::string const & text);
+	void add(const std::string & term, std::string const & desc = "");
+	void add_help();
+	bool has_key(std::string const & str) const;
+	std::string const & get_desc(std::string const & t) const;
+	bool set_var(std::string & var, std::string const & str) const;
 
-	std::string const & get_desc(std::string const & t) const
-	{
-		return descs[t];
-	}
-
-	std::vector<std::string> get_terms() const
-	{
-		std::vector<std::string> n;
-		for (auto const & p: descs) n.push_back(p.first);
-		return n;
-	}
-
-	size_t size() const {return descs.size();}
-
-	arg::SetValue * make_set_value(int & key_value)
-	{
-		arg::SetValue * sv = new arg::SetValue(key_value);
-		for (unsigned i = 0; i < names.size(); i ++) {
-			Name & n = names[i];
-			if (n.name == "help") sv->add_help(n.desc, n.key);
-			else sv->add(n.name, n.key, n.desc);
-		}
-		return sv;
-	}
+	std::shared_ptr<prm::Sable> make_var(std::string & var);
 };

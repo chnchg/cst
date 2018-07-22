@@ -19,9 +19,7 @@ License along with cst.  If not, see <http://www.gnu.org/licenses/>.
 /*
   storage using binary c++ iostream
  */
-
-#ifndef STRM_HH
-#define STRM_HH 1
+#pragma once
 #include "prm.hh"
 #include <iostream>
 namespace prm {
@@ -55,4 +53,3 @@ namespace prm {
 	void st_save(std::ostream & s, const Array & a, const std::string & n);
 	bool st_load(std::istream & s, Array & a, const std::string & n);
 }
-#endif // STRM_HH
