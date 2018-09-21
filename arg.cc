@@ -308,14 +308,15 @@ void Parser::parse(int argc, char * argv[], bool ignore_unknown)
 				n = s.substr(2, k - 2);
 				v = s.substr(k + 1);
 				vp = true;
-			} else {
+			}
+			else {
 				n = s.substr(2);
 			}
 			// find option from list
 			auto j = std::find_if(opt_list.begin(), opt_list.end(), [&n](std::shared_ptr<Option> x){return x->get_name() == n;});
 			if (j != opt_list.end()) {
 				if (vp) (*j)->process(v);
-				else (*j)->process(v);
+				else (*j)->process();
 			}
 			else if (! ignore_unknown) throw UnknError(n);
 			continue;
