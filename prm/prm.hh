@@ -111,6 +111,7 @@ namespace prm {
 	public:
 		Taggable() {}
 		Taggable(Taggable const & t);
+		Taggable & operator=(Taggable const & t);
 		virtual ~Taggable();
 		template <typename TG>
 		Taggable & operator << (const TG & tg)

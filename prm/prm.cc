@@ -37,6 +37,12 @@ Taggable::Taggable(Taggable const & t)
 	copy_tags(t);
 }
 
+Taggable & Taggable::operator=(Taggable const & t)
+{
+	copy_tags(t);
+	return * this;
+}
+
 Taggable::~Taggable()
 {
 	while (tag_list.size()) {
