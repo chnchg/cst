@@ -252,7 +252,7 @@ int Runner::on_execute()
 			abort();
 		}
 #ifndef NO_FCNTL_LOCK
-		flock lk;
+		struct flock lk;
 		// first aquire a read lock
 		lk.l_type = F_RDLCK;
 		lk.l_whence = SEEK_SET;
